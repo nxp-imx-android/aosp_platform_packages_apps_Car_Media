@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright 2016, The Android Open Source Project
+  Copyright 2018, The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<set xmlns:android="http://schemas.android.com/apk/res/android">
-    <alpha
-        android:fromAlpha="1.0"
-        android:toAlpha="0.0"
-        android:interpolator="@android:interpolator/fast_out_linear_in"
-        android:duration="500" />
-</set>
+<com.android.car.media.common.PlaybackControlsActionBar
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/playback_controls"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/car_margin"
+    android:layout_marginBottom="@dimen/car_padding_1"
+    app:columns="5"
+    app:layout_constraintBottom_toBottomOf="parent"/>

@@ -43,7 +43,7 @@
         app:layout_constraintGuide_begin="@dimen/car_padding_4"/>
 
     <include
-        layout="@layout/fragment_metadata"/>
+        layout="@layout/fragment_metadata_with_queue"/>
 
     <include
         layout="@layout/playback_controls"/>

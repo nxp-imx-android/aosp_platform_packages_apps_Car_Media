@@ -15,16 +15,6 @@
   limitations under the License.
 -->
 <resources>
-    <declare-styleable name="MetadataView">
-        <!-- Style of media item metadata view -->
-        <attr name="style" format="enum">
-            <!-- Compact version (to be included in the bottom bar during browsing -->
-            <enum name="compact" value="0"/>
-            <!-- Normal version (to be included in the playback screen -->
-            <enum name="normal" value="1"/>
-        </attr>
-    </declare-styleable>
-
     <declare-styleable name="AppBarView">
         <!-- Maximum number of tabs to show on the app bar -->
         <attr name="max_tabs" format="integer"/>
