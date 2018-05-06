@@ -20,18 +20,23 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.android.car.media.browse.BrowseAdapter;
 import com.android.car.media.browse.ContentForwardStrategy;
 import com.android.car.media.common.GridSpacingItemDecoration;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.MediaSource;
+import com.android.car.media.widgets.ViewUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,11 +54,17 @@ public class BrowseFragment extends Fragment {
     private static final String BROWSE_STACK_KEY = "browse_stack";
 
     private PagedListView mBrowseList;
+    private ProgressBar mProgressBar;
+    private ImageView mErrorIcon;
+    private TextView mErrorMessage;
     private MediaSource mMediaSource;
     private BrowseAdapter mBrowseAdapter;
     private String mMediaSourcePackageName;
     private MediaItemMetadata mTopMediaItem;
     private Callbacks mCallbacks;
+    private int mFadeDuration;
+    private int mProgressBarDelay;
+    private Handler mHandler = new Handler();
     private Stack<MediaItemMetadata> mBrowseStack = new Stack<>();
     private MediaSource.Observer mBrowseObserver = new MediaSource.Observer() {
         @Override
@@ -69,12 +80,27 @@ public class BrowseFragment extends Fragment {
     private BrowseAdapter.Observer mBrowseAdapterObserver = new BrowseAdapter.Observer() {
         @Override
         protected void onDirty() {
-            mBrowseAdapter.update();
-            if (mBrowseAdapter.getItemCount() > 0) {
-                mBrowseList.setVisibility(View.VISIBLE);
-            } else {
-                mBrowseList.setVisibility(View.GONE);
-                // TODO(b/77647430) implement intermediate states.
+            switch (mBrowseAdapter.getState()) {
+                case LOADING:
+                case IDLE:
+                    // Still loading... nothing to do.
+                    break;
+                case LOADED:
+                    stopLoadingIndicator();
+                    mBrowseAdapter.update();
+                    if (mBrowseAdapter.getItemCount() > 0) {
+                        ViewUtils.showViewAnimated(mBrowseList, mFadeDuration);
+                    } else {
+                        mErrorMessage.setText(R.string.nothing_to_play);
+                        ViewUtils.showViewAnimated(mErrorMessage, mFadeDuration);
+                    }
+                    break;
+                case ERROR:
+                    stopLoadingIndicator();
+                    mErrorMessage.setText(R.string.unknown_error);
+                    ViewUtils.showViewAnimated(mErrorMessage, mFadeDuration);
+                    ViewUtils.showViewAnimated(mErrorIcon, mFadeDuration);
+                    break;
             }
         }
 
@@ -175,13 +201,20 @@ public class BrowseFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, final ViewGroup container,
             Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_browse, container, false);
+        mProgressBar = view.findViewById(R.id.loading_spinner);
+        mProgressBarDelay = getContext().getResources()
+                .getInteger(R.integer.progress_indicator_delay);
         mBrowseList = view.findViewById(R.id.browse_list);
+        mErrorIcon = view.findViewById(R.id.error_icon);
+        mErrorMessage = view.findViewById(R.id.error_message);
+        mFadeDuration = getContext().getResources().getInteger(
+                R.integer.new_album_art_fade_in_duration);
         int numColumns = getContext().getResources().getInteger(R.integer.num_browse_columns);
         GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), numColumns);
         RecyclerView recyclerView = mBrowseList.getRecyclerView();
         recyclerView.setVerticalFadingEdgeEnabled(true);
         recyclerView.setFadingEdgeLength(getResources()
-                .getDimensionPixelSize(R.dimen.car_padding_4));
+                .getDimensionPixelSize(R.dimen.car_padding_5));
         recyclerView.setLayoutManager(gridLayoutManager);
         recyclerView.addItemDecoration(new GridSpacingItemDecoration(
                 getResources().getDimensionPixelSize(R.dimen.car_padding_4),
@@ -206,6 +239,7 @@ public class BrowseFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
+        startLoadingIndicator();
         mMediaSource = mCallbacks.getMediaSource(mMediaSourcePackageName);
         if (mMediaSource != null) {
             mMediaSource.subscribe(mBrowseObserver);
@@ -215,9 +249,28 @@ public class BrowseFragment extends Fragment {
         }
     }
 
+    private Runnable mProgressIndicatorRunnable = new Runnable() {
+        @Override
+        public void run() {
+            ViewUtils.showViewAnimated(mProgressBar, mFadeDuration);
+        }
+    };
+
+    private void startLoadingIndicator() {
+        // Display the indicator after a certain time, to avoid flashing the indicator constantly,
+        // even when performance is acceptable.
+        mHandler.postDelayed(mProgressIndicatorRunnable, mProgressBarDelay);
+    }
+
+    private void stopLoadingIndicator() {
+        mHandler.removeCallbacks(mProgressIndicatorRunnable);
+        ViewUtils.hideViewAnimated(mProgressBar, mFadeDuration);
+    }
+
     @Override
     public void onStop() {
         super.onStop();
+        stopLoadingIndicator();
         if (mMediaSource != null) {
             mMediaSource.unsubscribe(mBrowseObserver);
         }
@@ -239,13 +292,17 @@ public class BrowseFragment extends Fragment {
             mBrowseAdapter = null;
         }
         if (!success) {
-            mBrowseList.setVisibility(View.GONE);
-            // TODO(b/77647430) implement intermediate states.
+            ViewUtils.hideViewAnimated(mBrowseList, mFadeDuration);
+            stopLoadingIndicator();
+            mErrorMessage.setText(R.string.cannot_connect_to_app);
+            ViewUtils.showViewAnimated(mErrorIcon, mFadeDuration);
+            ViewUtils.showViewAnimated(mErrorMessage, mFadeDuration);
             return;
         }
         mBrowseAdapter = new BrowseAdapter(getContext(), mMediaSource.getMediaBrowser(),
                 getCurrentMediaItem(), ContentForwardStrategy.DEFAULT_STRATEGY);
         mBrowseList.setAdapter(mBrowseAdapter);
+        mBrowseList.setDividerVisibilityManager(mBrowseAdapter);
         mBrowseAdapter.registerObserver(mBrowseAdapterObserver);
         mBrowseAdapter.start();
     }

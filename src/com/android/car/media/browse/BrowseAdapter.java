@@ -39,6 +39,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import androidx.car.widget.PagedListView;
+
 /**
  * A {@link RecyclerView.Adapter} that can be used to display a single level of a
  * {@link android.service.media.MediaBrowserService} media tree into a
@@ -62,8 +64,9 @@ import java.util.stream.Collectors;
  *
  * <p>Consumers of this adapter should use {@link #registerObserver(Observer)} to receive updates.
  */
-public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
-    private static final String TAG = "MediaBrowseAdapter";
+public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> implements
+        PagedListView.DividerVisibilityManager {
+    private static final String TAG = "BrowseAdapter";
     @NonNull
     private final Context mContext;
     private final MediaBrowser mMediaBrowser;
@@ -76,7 +79,21 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
     private List<MediaItemMetadata> mQueue;
     private CharSequence mQueueTitle;
     private int mMaxSpanSize = 1;
-    private BrowseViewData.State mState = BrowseViewData.State.IDLE;
+    private State mState = State.IDLE;
+
+    /**
+     * Possible states of the adapter
+     */
+    public enum State {
+        /** Loading of this item hasn't started yet */
+        IDLE,
+        /** There is pending information before this item can be displayed */
+        LOADING,
+        /** It was not possible to load metadata for this item */
+        ERROR,
+        /** Metadata for this items has been correctly loaded */
+        LOADED
+    }
 
     /**
      * An {@link BrowseAdapter} observer.
@@ -149,7 +166,7 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
          */
         final MediaItemMetadata mItem;
         /** Current loading state for this item */
-        BrowseViewData.State mState = BrowseViewData.State.LOADING;
+        State mState = State.LOADING;
         /** Playable children of the given item */
         List<MediaItemMetadata> mPlayableChildren = new ArrayList<>();
         /** Browsable children of the given item */
@@ -233,7 +250,7 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
         if (Objects.equals(newParentMediaItemId, mParentMediaItemId)) {
             return;
         }
-        mMediaBrowser.unsubscribe(mParentMediaItemId, mSubscriptionCallback);
+        stop();
         mParentMediaItem = parentItem;
         mParentMediaItemId = newParentMediaItemId;
         mMediaBrowser.subscribe(mParentMediaItemId, mSubscriptionCallback);
@@ -265,9 +282,9 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
     /**
      * @return the global loading state. Consumers can use this state to determine if more
      * information is still pending to arrive or not. This method will report
-     * {@link BrowseViewData.State#ERROR} only if the list of immediate children fails to load.
+     * {@link State#ERROR} only if the list of immediate children fails to load.
      */
-    public BrowseViewData.State getState() {
+    public State getState() {
         return mState;
     }
 
@@ -317,6 +334,8 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
         if (!state.mIsSubscribed && state.mItem.isBrowsable()) {
             mMediaBrowser.subscribe(state.mItem.getId(), mSubscriptionCallback);
             state.mIsSubscribed = true;
+        } else {
+            state.mState = State.LOADED;
         }
     }
 
@@ -380,14 +399,13 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
                 return;
             }
             itemState.setChildren(children);
-            itemState.mState = BrowseViewData.State.LOADED;
+            itemState.mState = State.LOADED;
         }
         updateGlobalState();
         notify(Observer::onDirty);
     }
 
     private void notify(Consumer<Observer> notification) {
-        Log.i(TAG, "Notifying: " + notification);
         for (Observer observer : mObservers) {
             notification.accept(observer);
         }
@@ -395,7 +413,7 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
 
     private void onLoadingError(String parentId) {
         if (parentId.equals(mParentMediaItemId)) {
-            mState = BrowseViewData.State.ERROR;
+            mState = State.ERROR;
         } else {
             MediaItemState state = mItemStates.get(parentId);
             if (state == null) {
@@ -403,20 +421,20 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
                 return;
             }
             state.setChildren(new ArrayList<>());
-            state.mState = BrowseViewData.State.ERROR;
+            state.mState = State.ERROR;
+            updateGlobalState();
         }
-        updateGlobalState();
         notify(Observer::onDirty);
     }
 
     private void updateGlobalState() {
         for (MediaItemState state: mItemStates.values()) {
-            if (state.mState == BrowseViewData.State.LOADING) {
-                mState = BrowseViewData.State.LOADING;
+            if (state.mState == State.LOADING) {
+                mState = State.LOADING;
                 return;
             }
         }
-        mState = BrowseViewData.State.LOADED;
+        mState = State.LOADED;
     }
 
     private DiffUtil.Callback createDiffUtil(List<BrowseViewData> oldList,
@@ -463,7 +481,7 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
     private class ItemsBuilder {
         private List<BrowseViewData> result = new ArrayList<>();
 
-        void addItem(MediaItemMetadata item, BrowseViewData.State state,
+        void addItem(MediaItemMetadata item, State state,
                 BrowseItemViewType viewType, Consumer<Observer> notification) {
             View.OnClickListener listener = notification != null ?
                     view -> BrowseAdapter.this.notify(notification) :
@@ -494,7 +512,7 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
 
         }
 
-        void addBrowseBlock(MediaItemMetadata header, BrowseViewData.State state,
+        void addBrowseBlock(MediaItemMetadata header, State state,
                 List<MediaItemMetadata> items, BrowseItemViewType viewType, int maxChildren,
                 boolean showHeader, boolean showMoreFooter) {
             if (showHeader) {
@@ -520,6 +538,27 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
     private List<BrowseViewData> generateViewData(Collection<MediaItemState> itemStates) {
         ItemsBuilder itemsBuilder = new ItemsBuilder();
 
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            Log.v(TAG, "Generating browse view from:");
+            for (MediaItemState item : itemStates) {
+                Log.v(TAG, String.format("[%s%s] '%s' (%s)",
+                        item.mItem.isBrowsable() ? "B" : " ",
+                        item.mItem.isPlayable() ? "P" : " ",
+                        item.mItem.getTitle(),
+                        item.mItem.getId()));
+                List<MediaItemMetadata> items = new ArrayList<>();
+                items.addAll(item.mBrowsableChildren);
+                items.addAll(item.mPlayableChildren);
+                for (MediaItemMetadata child : items) {
+                    Log.v(TAG, String.format("   [%s%s] '%s' (%s)",
+                            child.isBrowsable() ? "B" : " ",
+                            child.isPlayable() ? "P" : " ",
+                            child.getTitle(),
+                            child.getId()));
+                }
+            }
+        }
+
         if (mQueue != null && !mQueue.isEmpty() && mCFBStrategy.getMaxQueueRows() > 0
                 && mCFBStrategy.getQueueViewType() != null) {
             if (mQueueTitle != null) {
@@ -528,9 +567,25 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
             itemsBuilder.addItems(mQueue, mCFBStrategy.getQueueViewType(),
                     mCFBStrategy.getMaxQueueRows());
         }
+
+        boolean containsBrowsableItems = false;
+        boolean containsPlayableItems = false;
+        for (MediaItemState itemState : itemStates) {
+            containsBrowsableItems |= itemState.mItem.isBrowsable();
+            containsPlayableItems |= itemState.mItem.isPlayable();
+        }
+
         for (MediaItemState itemState : itemStates) {
             MediaItemMetadata item = itemState.mItem;
-            if (itemState.mItem.isBrowsable()) {
+            if (containsPlayableItems && containsBrowsableItems) {
+                // If we have a mix of browsable and playable items: show them all in a list
+                itemsBuilder.addItem(item, itemState.mState,
+                        BrowseItemViewType.PANEL_ITEM,
+                        item.isBrowsable()
+                                ? observer -> observer.onBrowseableItemClicked(item)
+                                : observer -> observer.onPlayableItemClicked(item));
+            } else if (itemState.mItem.isBrowsable()) {
+                // If we only have browsable items, check whether we should expand them or not.
                 if (!itemState.mBrowsableChildren.isEmpty()
                         && !itemState.mPlayableChildren.isEmpty()
                         || !mCFBStrategy.shouldBeExpanded(item)) {
@@ -542,18 +597,19 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
                             itemState.mPlayableChildren,
                             mCFBStrategy.getPlayableViewType(item),
                             mCFBStrategy.getMaxRows(item, mCFBStrategy.getPlayableViewType(item)),
-                            mCFBStrategy.showMoreButton(item),
-                            mCFBStrategy.includeHeader(item));
+                            mCFBStrategy.includeHeader(item),
+                            mCFBStrategy.showMoreButton(item));
                 } else if (!itemState.mBrowsableChildren.isEmpty()) {
                     itemsBuilder.addBrowseBlock(item,
                             itemState.mState,
                             itemState.mBrowsableChildren,
                             mCFBStrategy.getBrowsableViewType(item),
                             mCFBStrategy.getMaxRows(item, mCFBStrategy.getBrowsableViewType(item)),
-                            mCFBStrategy.showMoreButton(item),
-                            mCFBStrategy.includeHeader(item));
+                            mCFBStrategy.includeHeader(item),
+                            mCFBStrategy.showMoreButton(item));
                 }
             } else if (item.isPlayable()) {
+                // If we only have playable items: show them as so.
                 itemsBuilder.addItem(item, itemState.mState,
                         mCFBStrategy.getPlayableViewType(mParentMediaItem),
                         observer -> observer.onPlayableItemClicked(item));
@@ -561,5 +617,13 @@ public class BrowseAdapter extends RecyclerView.Adapter<BrowseViewHolder> {
         }
 
         return itemsBuilder.build();
+    }
+
+    @Override
+    public boolean shouldHideDivider(int position) {
+        return position >= mViewData.size() - 1
+                || position < 0
+                || mViewData.get(position).mViewType != BrowseItemViewType.PANEL_ITEM
+                || mViewData.get(position + 1).mViewType != BrowseItemViewType.PANEL_ITEM;
     }
 }

@@ -47,6 +47,8 @@
     <dimen name="playback_album_art_size_normal">156dp</dimen>
     <!-- Size of the album art thumbnail when large -->
     <dimen name="playback_album_art_size_large">574dp</dimen>
+    <!-- Bottom marging for the playback queue -->
+    <dimen name="playback_controls_margin">192dp</dimen>
 
     <!-- Tab height -->
     <dimen name="browse_tab_height">76dp</dimen>
@@ -60,5 +62,5 @@
     <item name="browse_tab_alpha_unselected" format="float" type="dimen">0.5</item>
 
     <!-- App bar -->
-    <dimen name="appbar_height">112dp</dimen>
+    <dimen name="appbar_height">116dp</dimen>
 </resources>
