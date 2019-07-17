@@ -172,7 +172,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         PLAYBACK,
         /** The user is searching within a media source */
         SEARCHING,
-        /** There's no browse tree and playback doesn't work.*/
+        /** There's no browse tree and playback doesn't work. */
         FATAL_ERROR
     }
 
@@ -389,7 +389,8 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
             mAppBarView.setTitle(null);
             updateTabs(null);
             mSearchFragment.resetSearchState();
-            changeMode(Mode.BROWSING);
+            // Changes the mode regardless of its previous value so that the views can be updated.
+            changeModeInternal(Mode.BROWSING);
             String packageName = mediaSource.getPackageName();
             updateSourcePreferences(packageName);
 
@@ -483,10 +484,18 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
     }
 
     private void changeMode(Mode mode) {
-        if (mMode == mode) return;
+        if (mMode == mode) {
+            if (Log.isLoggable(TAG, Log.INFO)) {
+                Log.i(TAG, "Mode " + mMode + " change is ignored");
+            }
+            return;
+        }
+        changeModeInternal(mode);
+    }
 
+    private void changeModeInternal(Mode mode) {
         if (Log.isLoggable(TAG, Log.INFO)) {
-            Log.i(TAG, "Changing mode from: " + mMode+ " to: " + mode);
+            Log.i(TAG, "Changing mode from: " + mMode + " to: " + mode);
         }
 
         Mode oldMode = mMode;
