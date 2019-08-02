@@ -29,7 +29,7 @@
     <string name="default_error_message" msgid="6365377134388091079">"ఏదో తప్పుగా ఉంది. తర్వాత ప్రయత్నించండి."</string>
     <string name="error_code_app_error" msgid="1726372057192704809">"దాన్ని ఇప్పుడే చేయడం సాధ్యపడదు"</string>
     <string name="error_code_not_supported" msgid="1435878548411799387">"ఈ యాప్ దాన్ని చేయలేదు"</string>
-    <string name="error_code_authentication_expired" msgid="470036816278170698">"మళ్ళీ సైన్ ఇన్ చేయడానికి ప్రయత్నించండి"</string>
+    <string name="error_code_authentication_expired" msgid="905154133202017052">"ఈ యాప్‌ను ఉపయోగించడానికి సైన్ ఇన్ చేయండి"</string>
     <string name="error_code_premium_account_required" msgid="4736461331592855166">"ప్రీమియం యాక్సెస్ అవసరం"</string>
     <string name="error_code_concurrent_stream_limit" msgid="1279573243715957403">"చాలా ఎక్కువ పరికరాలలో వింటున్నారు"</string>
     <string name="error_code_parental_control_restricted" msgid="5222841294702530806">"ఆ కంటెంట్ బ్లాక్ చేయబడింది"</string>
