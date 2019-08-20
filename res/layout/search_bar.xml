@@ -35,6 +35,7 @@
         android:layout_width="match_parent"
         android:paddingStart="@dimen/appbar_view_search_bar_padding"
         android:layout_marginStart="@dimen/appbar_view_search_app_icon_margin"
+        android:layout_marginEnd="@dimen/appbar_view_search_bar_end_margin"
         android:hint="@string/search_hint"
         android:textColorHint="@color/search_hint_text_color"
         android:textCursorDrawable="@null"
