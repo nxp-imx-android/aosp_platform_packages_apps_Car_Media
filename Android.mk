@@ -51,7 +51,8 @@ LOCAL_STATIC_ANDROID_LIBRARIES += \
 # Including the resources for the static android libraries allows to pick up their static overlays.
 LOCAL_RESOURCE_DIR += \
     $(LOCAL_PATH)/../libs/car-apps-common/res \
-    $(LOCAL_PATH)/../libs/car-media-common/res
+    $(LOCAL_PATH)/../libs/car-media-common/res \
+    $(LOCAL_PATH)/../libs/car-ui-lib/res
 
 include $(BUILD_PACKAGE)
 

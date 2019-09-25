@@ -443,7 +443,6 @@ public class PlaybackFragment extends Fragment {
                     }
                 });
         mQueue.setAdapter(mQueueAdapter);
-        mQueue.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // Disable item changed animation.
         mItemAnimator = new DefaultItemAnimator();
