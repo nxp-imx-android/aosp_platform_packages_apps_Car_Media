@@ -674,7 +674,6 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
 
     @Override
     public void onPlayableItemClicked(MediaItemMetadata item) {
-        mPlaybackController.stop();
         mPlaybackController.playItem(item);
         boolean switchToPlayback = getResources().getBoolean(
                 R.bool.switch_to_playback_view_when_playable_item_is_clicked);
