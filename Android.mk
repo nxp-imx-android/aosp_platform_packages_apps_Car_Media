@@ -45,7 +45,8 @@ LOCAL_STATIC_JAVA_LIBRARIES += \
 LOCAL_STATIC_ANDROID_LIBRARIES += \
     androidx-constraintlayout_constraintlayout \
     car-apps-common \
-    car-media-common
+    car-media-common \
+    car-ui-lib
 
 # Including the resources for the static android libraries allows to pick up their static overlays.
 LOCAL_RESOURCE_DIR += \
