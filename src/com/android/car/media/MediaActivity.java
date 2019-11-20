@@ -59,6 +59,7 @@ import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceViewModel;
 import com.android.car.media.widgets.AppBarView;
 import com.android.car.ui.toolbar.Toolbar;
+import com.android.car.ui.AlertDialogBuilder;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -400,7 +401,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
 
     private void showDialog(PendingIntent intent, String message, String positiveBtnText,
             String negativeButtonText) {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        AlertDialogBuilder dialog = new AlertDialogBuilder(this);
         mDialog = dialog.setMessage(message)
                 .setNegativeButton(negativeButtonText, null)
                 .setPositiveButton(positiveBtnText, (dialogInterface, i) -> {
