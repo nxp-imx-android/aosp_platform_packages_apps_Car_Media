@@ -122,7 +122,6 @@ public class BrowseFragment extends Fragment {
             mMediaBrowserViewModel.search(mSearchQuery);
             mMediaBrowserViewModel.setCurrentBrowseId(getCurrentMediaItemId());
             getParent().onBackStackChanged();
-            adjustBrowseTopPadding();
             result = true;
         }
         if (mBrowseStack.isEmpty()) {
@@ -217,10 +216,7 @@ public class BrowseFragment extends Fragment {
 
         MediaActivity.ViewModel viewModel = ViewModelProviders.of(requireActivity()).get(
                 MediaActivity.ViewModel.class);
-        viewModel.getMiniControlsVisible().observe(this, (visible) -> {
-            mPlaybackControlsVisible = visible;
-            adjustBrowseTopPadding();
-        });
+        viewModel.getMiniControlsVisible().observe(this, this::onPlaybackControlsChanged);
 
     }
 
@@ -296,6 +292,7 @@ public class BrowseFragment extends Fragment {
                 ViewUtils.hideViewAnimated(mMessage, mFadeDuration);
             }
         });
+
         return view;
     }
 
@@ -337,7 +334,6 @@ public class BrowseFragment extends Fragment {
         mShowSearchResults.setValue(false);
         mMediaBrowserViewModel.setCurrentBrowseId(item.getId());
         getParent().onBackStackChanged();
-        adjustBrowseTopPadding();
     }
 
     /**
@@ -358,20 +354,24 @@ public class BrowseFragment extends Fragment {
         return currentItem != null ? currentItem.getId() : null;
     }
 
-    private void adjustBrowseTopPadding() {
-        if(mBrowseList == null) {
+    public void onAppBarHeightChanged(int height) {
+        if (mBrowseList == null) {
             return;
         }
 
-        int topPadding = isAtTopStack()
-                ? getResources().getDimensionPixelOffset(R.dimen.browse_fragment_top_padding)
-                : getResources().getDimensionPixelOffset(
-                        R.dimen.browse_fragment_top_padding_stacked);
+        mBrowseList.setPadding(mBrowseList.getPaddingLeft(), height,
+                mBrowseList.getPaddingRight(), mBrowseList.getPaddingBottom());
+    }
+
+    private void onPlaybackControlsChanged(boolean visible) {
+        if (mBrowseList == null) {
+            return;
+        }
+
         int bottomPadding = mPlaybackControlsVisible
                 ? getResources().getDimensionPixelOffset(R.dimen.browse_fragment_bottom_padding)
                 : 0;
-
-        mBrowseList.setPadding(mBrowseList.getPaddingLeft(), topPadding,
+        mBrowseList.setPadding(mBrowseList.getPaddingLeft(), mBrowseList.getPaddingTop(),
                 mBrowseList.getPaddingRight(), bottomPadding);
     }
 
