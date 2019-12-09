@@ -106,7 +106,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
     private Intent mCurrentSourcePreferences;
     private boolean mCanShowMiniPlaybackControls;
     private boolean mShouldShowSoundSettings;
-
+    private boolean mBrowseTreeHasChildren;
     private PlaybackViewModel.PlaybackStateWrapper mCurrentPlaybackStateWrapper;
     /**
      * Media items to display as tabs. If null, it means we haven't finished loading them yet. If
@@ -270,9 +270,17 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
                 if (Log.isLoggable(TAG, Log.INFO)) {
                     Log.i(TAG, "Loading browse tree...");
                 }
+                mBrowseTreeHasChildren = false;
                 updateTabs(null);
                 return;
             }
+            final boolean browseTreeHasChildren =
+                    futureData.getData() != null && !futureData.getData().isEmpty();
+            if (Log.isLoggable(TAG, Log.INFO)) {
+                Log.i(TAG, "Browse tree loaded, status (has children or not) changed: "
+                        + mBrowseTreeHasChildren + " -> " + browseTreeHasChildren);
+            }
+            mBrowseTreeHasChildren = browseTreeHasChildren;
             handlePlaybackState(playbackViewModel.getPlaybackStateWrapper().getValue(), false);
             updateTabs(futureData.getData() != null ? futureData.getData() : new ArrayList<>());
         });
@@ -380,7 +388,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
 
         boolean isFatalError = false;
         if (!TextUtils.isEmpty(displayedMessage)) {
-            if (mTopItems != null) {
+            if (mBrowseTreeHasChildren) {
                 if (intent != null && !isUxRestricted()) {
                     showDialog(intent, displayedMessage, label, getString(android.R.string.cancel));
                 } else {
@@ -476,6 +484,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         mBrowseFragment.resetState();
         mSearchFragment.resetState();
 
+        mBrowseTreeHasChildren = false;
         mCurrentPlaybackStateWrapper = null;
         maybeCancelToast();
         maybeCancelDialog();
