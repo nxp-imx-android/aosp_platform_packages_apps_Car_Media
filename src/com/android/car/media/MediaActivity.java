@@ -327,8 +327,10 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         mAppBarView.setAppLauncherSupported(mAppSelectorIntent != null);
 
         localViewModel.getMiniControlsVisible().observe(this, visible -> {
-            mBrowseFragment.onPlaybackControlsChanged(visible);
-            mSearchFragment.onPlaybackControlsChanged(visible);
+            int topMargin = mAppBarView.getHeight();
+            int bottomMargin = visible ? mMiniPlaybackControls.getHeight() : 0;
+            mBrowseFragment.onPlaybackControlsChanged(visible, topMargin, bottomMargin);
+            mSearchFragment.onPlaybackControlsChanged(visible, topMargin, bottomMargin);
         } );
     }
 
