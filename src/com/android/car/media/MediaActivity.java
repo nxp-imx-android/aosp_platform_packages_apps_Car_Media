@@ -491,7 +491,6 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         mCurrentPlaybackStateWrapper = null;
         maybeCancelToast();
         maybeCancelDialog();
-        updateAppBarTitle();
         mAppBarView.setLogo(mediaSource != null
                 ? new BitmapDrawable(getResources(), mediaSource.getRoundPackageIcon())
                 : null);
@@ -499,6 +498,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
             if (Log.isLoggable(TAG, Log.INFO)) {
                 Log.i(TAG, "Browsing: " + mediaSource.getDisplayName());
             }
+            updateTabs(null);
             Mode mediaSourceMode = getInnerViewModel().getSavedMode();
             // Changes the mode regardless of its previous value so that the views can be updated.
             changeModeInternal(mediaSourceMode, false);
@@ -540,7 +540,9 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
      *              items couldn't be loaded.
      */
     private void updateTabs(@Nullable List<MediaItemMetadata> items) {
-        List<MediaItemMetadata> browsableTopLevel = (items == null) ? new ArrayList<>() :
+        // Keep mTopItems null when the items are being loaded so that updateAppBarTitle() can
+        // handle that case specifically.
+        List<MediaItemMetadata> browsableTopLevel = (items == null) ? null :
                 items.stream().filter(MediaItemMetadata::isBrowsable).collect(Collectors.toList());
 
         if (Objects.equals(mTopItems, browsableTopLevel)) {
@@ -551,7 +553,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         }
         mTopItems = browsableTopLevel;
 
-        if (mTopItems.isEmpty()) {
+        if (mTopItems == null || mTopItems.isEmpty()) {
             mAppBarView.setItems(null);
             mAppBarView.setActiveItem(null);
             if (items != null) {
@@ -680,7 +682,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
             // If we finished loading tabs and there is only one, use that as title.
             title = mTopItems.get(0).getTitle();
         } else {
-            // Otherwise, show the current media source title (in case there are no tabs).
+            // Otherwise (no tabs or more than 1 tabs), show the current media source title.
             MediaSourceViewModel mediaSourceViewModel = getMediaSourceViewModel();
             MediaSource mediaSource = mediaSourceViewModel.getPrimaryMediaSource().getValue();
             title = (mediaSource != null) ? mediaSource.getDisplayName()
