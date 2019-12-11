@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.audiofx.AudioEffect;
 import android.os.Bundle;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -493,9 +494,11 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         mCurrentPlaybackStateWrapper = null;
         maybeCancelToast();
         maybeCancelDialog();
-        mAppBarView.setLogo(mediaSource != null
+        Drawable icon = mediaSource != null
                 ? new BitmapDrawable(getResources(), mediaSource.getRoundPackageIcon())
-                : null);
+                : null;
+        mAppBarView.setLogo(icon);
+        mAppBarView.setSearchIcon(icon);
         if (mediaSource != null) {
             if (Log.isLoggable(TAG, Log.INFO)) {
                 Log.i(TAG, "Browsing: " + mediaSource.getDisplayName());
