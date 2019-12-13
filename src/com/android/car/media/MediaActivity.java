@@ -634,6 +634,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
                 ViewUtils.hideViewAnimated(mBrowseContainer, fadeOutDuration);
                 ViewUtils.hideViewAnimated(mSearchContainer, fadeOutDuration);
                 mAppBarView.setState(Toolbar.State.HOME);
+                mAppBarView.showSearchIfSupported(false);
                 break;
             case PLAYBACK:
                 mPlaybackContainer.setY(0);
@@ -713,6 +714,9 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
                 : Toolbar.State.HOME;
         updateAppBarTitle();
         mAppBarView.setState(isStacked ? Toolbar.State.SUBPAGE : unstackedState);
+
+        boolean showSearchItem = mMode != Mode.FATAL_ERROR && mMode != Mode.SEARCHING;
+        mAppBarView.showSearchIfSupported(showSearchItem);
     }
 
     private void updateMiniPlaybackControls(boolean hideViewAnimated) {
