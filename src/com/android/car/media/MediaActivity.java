@@ -173,7 +173,11 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
 
         @Override
         public void onSearchSelection() {
-            changeMode(Mode.SEARCHING);
+            if (mMode == Mode.SEARCHING) {
+                mSearchFragment.reopenSearch();
+            } else {
+                changeMode(Mode.SEARCHING);
+            }
         }
 
         @Override
