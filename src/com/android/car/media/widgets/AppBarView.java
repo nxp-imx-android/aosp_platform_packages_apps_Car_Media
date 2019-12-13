@@ -5,7 +5,6 @@ import android.annotation.NonNull;
 import android.car.drivingstate.CarUxRestrictions;
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import com.android.car.media.R;
 import com.android.car.media.common.MediaItemMetadata;
