@@ -192,7 +192,12 @@ public class PlaybackFragment extends Fragment {
         private boolean mTimeVisible;
 
         void setItems(@Nullable List<MediaItemMetadata> items) {
-            mQueueItems = new ArrayList<>(items != null ? items : Collections.emptyList());
+            List<MediaItemMetadata> newQueueItems =
+                new ArrayList<>(items != null ? items : Collections.emptyList());
+            if (newQueueItems.equals(mQueueItems)) {
+                return;
+            }
+            mQueueItems = newQueueItems;
             notifyDataSetChanged();
         }
 
@@ -472,7 +477,6 @@ public class PlaybackFragment extends Fragment {
 
     private void setQueue(List<MediaItemMetadata> queueItems) {
         mQueueAdapter.setItems(queueItems);
-        mQueueAdapter.refresh();
     }
 
     private void initMetadataController(View view) {
