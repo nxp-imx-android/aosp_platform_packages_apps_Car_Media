@@ -209,7 +209,7 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
     /**
      * Possible modes of the application UI
      */
-    private enum Mode {
+    enum Mode {
         /** The user is browsing a media source */
         BROWSING,
         /** The user is interacting with the full screen playback UI */
@@ -474,7 +474,21 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
+        switch (mMode) {
+            case PLAYBACK:
+                changeMode(Mode.BROWSING);
+                break;
+            case SEARCHING:
+                mSearchFragment.onBackPressed();
+                break;
+            case BROWSING:
+                boolean handled = mBrowseFragment.onBackPressed();
+                if (handled) return;
+                // Fall through.
+            case FATAL_ERROR:
+            default:
+                super.onBackPressed();
+        }
     }
 
     /**
@@ -611,7 +625,8 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
         return mMode == Mode.SEARCHING ? mSearchFragment : mBrowseFragment;
     }
 
-    private void changeMode(Mode mode) {
+    @Override
+    public void changeMode(Mode mode) {
         if (mMode == mode) {
             if (Log.isLoggable(TAG, Log.INFO)) {
                 Log.i(TAG, "Mode " + mMode + " change is ignored");

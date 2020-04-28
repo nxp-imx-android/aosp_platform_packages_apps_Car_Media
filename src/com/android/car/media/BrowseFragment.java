@@ -114,6 +114,9 @@ public class BrowseFragment {
          */
         void onPlayableItemClicked(MediaItemMetadata item);
 
+        /** Change to a new UI mode. */
+        void changeMode(MediaActivity.Mode mode);
+
         FragmentActivity getActivity();
     }
 
@@ -295,6 +298,15 @@ public class BrowseFragment {
         });
 
         container.addView(mFragmentContent);
+    }
+
+    boolean onBackPressed() {
+        boolean success = navigateBack();
+        if (!success && (mIsSearchFragment)) {
+            mCallbacks.changeMode(MediaActivity.Mode.BROWSING);
+            return true;
+        }
+        return success;
     }
 
     private Runnable mLoadingIndicatorRunnable = new Runnable() {
