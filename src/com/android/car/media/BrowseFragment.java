@@ -36,6 +36,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.apps.common.util.ViewUtils;
@@ -46,6 +47,9 @@ import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.browse.MediaBrowserViewModel;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceViewModel;
+import com.android.car.ui.recyclerview.DelegatingContentLimitingAdapter;
+import com.android.car.uxr.LifeCycleObserverUxrContentLimiter;
+import com.android.car.uxr.UxrContentLimiterImpl;
 
 import java.util.List;
 import java.util.Stack;
@@ -68,10 +72,13 @@ public class BrowseFragment {
     private final Callbacks mCallbacks;
     private final View mFragmentContent;
 
+    private final LifeCycleObserverUxrContentLimiter mUxrContentLimiter;
     private RecyclerView mBrowseList;
     private ViewGroup mBrowseState;
     private ImageView mErrorIcon;
     private TextView mMessage;
+    private final DelegatingContentLimitingAdapter mLimitedBrowseAdapter;
+    private int mMaxSpanSize = 1;
     private BrowseAdapter mBrowseAdapter;
     private String mSearchQuery;
     private int mFadeDuration;
@@ -250,6 +257,20 @@ public class BrowseFragment {
         mBrowseList.setAdapter(mBrowseAdapter);
         mBrowseAdapter.registerObserver(mBrowseAdapterObserver);
 
+        mLimitedBrowseAdapter = new DelegatingContentLimitingAdapter(mBrowseAdapter,
+                R.id.browse_list_uxr_config);
+        mBrowseList.setAdapter(mLimitedBrowseAdapter);
+
+        GridLayoutManager manager = (GridLayoutManager) mBrowseList.getLayoutManager();
+        mMaxSpanSize = manager.getSpanCount();
+        manager.setSpanSizeLookup(mSpanSizeLookup);
+
+
+        mUxrContentLimiter = new LifeCycleObserverUxrContentLimiter(
+                new UxrContentLimiterImpl(activity, R.xml.uxr_config));
+        mUxrContentLimiter.setAdapter(mLimitedBrowseAdapter);
+        activity.getLifecycle().addObserver(mUxrContentLimiter);
+
         mMediaBrowserViewModel.rootBrowsableHint().observe(activity, hint ->
                 mBrowseAdapter.setRootBrowsableViewType(hint));
         mMediaBrowserViewModel.rootPlayableHint().observe(activity, hint ->
@@ -299,6 +320,19 @@ public class BrowseFragment {
 
         container.addView(mFragmentContent);
     }
+
+    private final GridLayoutManager.SpanSizeLookup mSpanSizeLookup =
+            new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    if (mLimitedBrowseAdapter.getItemViewType(position) ==
+                            mLimitedBrowseAdapter.getScrollingLimitedMessageViewType()) {
+                        return mMaxSpanSize;
+                    }
+
+                    return mBrowseAdapter.getSpanSize(position, mMaxSpanSize);
+                }
+            };
 
     boolean onBackPressed() {
         boolean success = navigateBack();
