@@ -42,12 +42,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.arch.common.FutureData;
 import com.android.car.media.browse.BrowseAdapter;
+import com.android.car.media.browse.LimitedBrowseAdapter;
 import com.android.car.media.common.GridSpacingItemDecoration;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.browse.MediaBrowserViewModel;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceViewModel;
-import com.android.car.ui.recyclerview.DelegatingContentLimitingAdapter;
 import com.android.car.uxr.LifeCycleObserverUxrContentLimiter;
 import com.android.car.uxr.UxrContentLimiterImpl;
 
@@ -77,9 +77,7 @@ public class BrowseFragment {
     private ViewGroup mBrowseState;
     private ImageView mErrorIcon;
     private TextView mMessage;
-    private final DelegatingContentLimitingAdapter mLimitedBrowseAdapter;
-    private int mMaxSpanSize = 1;
-    private BrowseAdapter mBrowseAdapter;
+    private final LimitedBrowseAdapter mLimitedBrowseAdapter;
     private String mSearchQuery;
     private int mFadeDuration;
     private int mLoadingIndicatorDelay;
@@ -219,7 +217,7 @@ public class BrowseFragment {
             mShowSearchResults.setValue(false);
         }
 
-        mBrowseAdapter.submitItems(null, null);
+        mLimitedBrowseAdapter.submitItems(null, null);
         stopLoadingIndicator();
         ViewUtils.hideViewAnimated(mErrorIcon, mFadeDuration);
         ViewUtils.hideViewAnimated(mMessage, mFadeDuration);
@@ -253,18 +251,10 @@ public class BrowseFragment {
         mBrowseList.addItemDecoration(new GridSpacingItemDecoration(
                 activity.getResources().getDimensionPixelSize(R.dimen.grid_item_spacing)));
 
-        mBrowseAdapter = new BrowseAdapter(mBrowseList.getContext());
-        mBrowseList.setAdapter(mBrowseAdapter);
-        mBrowseAdapter.registerObserver(mBrowseAdapterObserver);
-
-        mLimitedBrowseAdapter = new DelegatingContentLimitingAdapter(mBrowseAdapter,
-                R.id.browse_list_uxr_config);
-        mBrowseList.setAdapter(mLimitedBrowseAdapter);
-
         GridLayoutManager manager = (GridLayoutManager) mBrowseList.getLayoutManager();
-        mMaxSpanSize = manager.getSpanCount();
-        manager.setSpanSizeLookup(mSpanSizeLookup);
-
+        mLimitedBrowseAdapter = new LimitedBrowseAdapter(
+                new BrowseAdapter(mBrowseList.getContext()), manager, mBrowseAdapterObserver);
+        mBrowseList.setAdapter(mLimitedBrowseAdapter);
 
         mUxrContentLimiter = new LifeCycleObserverUxrContentLimiter(
                 new UxrContentLimiterImpl(activity, R.xml.uxr_config));
@@ -272,9 +262,9 @@ public class BrowseFragment {
         activity.getLifecycle().addObserver(mUxrContentLimiter);
 
         mMediaBrowserViewModel.rootBrowsableHint().observe(activity, hint ->
-                mBrowseAdapter.setRootBrowsableViewType(hint));
+                mLimitedBrowseAdapter.getBrowseAdapter().setRootBrowsableViewType(hint));
         mMediaBrowserViewModel.rootPlayableHint().observe(activity, hint ->
-                mBrowseAdapter.setRootPlayableViewType(hint));
+                mLimitedBrowseAdapter.getBrowseAdapter().setRootPlayableViewType(hint));
         LiveData<FutureData<List<MediaItemMetadata>>> mediaItems = ifThenElse(mShowSearchResults,
                 mMediaBrowserViewModel.getSearchedMediaItems(),
                 mMediaBrowserViewModel.getBrowsedMediaItems());
@@ -291,7 +281,7 @@ public class BrowseFragment {
                 // TODO(b/139759881) build a jank-free animation of the transition.
                 mBrowseList.setAlpha(0f);
                 startLoadingIndicator();
-                mBrowseAdapter.submitItems(null, null);
+                mLimitedBrowseAdapter.submitItems(null, null);
                 return;
             }
             stopLoadingIndicator();
@@ -300,7 +290,7 @@ public class BrowseFragment {
                 items = items.stream().filter(item ->
                         (item.isPlayable() || item.isBrowsable())).collect(Collectors.toList());
             }
-            mBrowseAdapter.submitItems(getCurrentMediaItem(), items);
+            mLimitedBrowseAdapter.submitItems(getCurrentMediaItem(), items);
             if (items == null) {
                 mMessage.setText(R.string.unknown_error);
                 ViewUtils.hideViewAnimated(mBrowseList, mFadeDuration);
@@ -320,19 +310,6 @@ public class BrowseFragment {
 
         container.addView(mFragmentContent);
     }
-
-    private final GridLayoutManager.SpanSizeLookup mSpanSizeLookup =
-            new GridLayoutManager.SpanSizeLookup() {
-                @Override
-                public int getSpanSize(int position) {
-                    if (mLimitedBrowseAdapter.getItemViewType(position) ==
-                            mLimitedBrowseAdapter.getScrollingLimitedMessageViewType()) {
-                        return mMaxSpanSize;
-                    }
-
-                    return mBrowseAdapter.getSpanSize(position, mMaxSpanSize);
-                }
-            };
 
     boolean onBackPressed() {
         boolean success = navigateBack();
