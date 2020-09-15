@@ -639,6 +639,9 @@ public class PlaybackFragment extends Fragment {
         mItemAnimator.setSupportsChangeAnimations(false);
         mQueue.setItemAnimator(mItemAnimator);
 
+        // Make sure the AppBar menu reflects the initial state of playback fragment.
+        updateAppBarMenu(mHasQueue, mQueueIsVisible);
+
         getPlaybackViewModel().getQueue().observe(this, this::setQueue);
 
         getPlaybackViewModel().hasQueue().observe(getViewLifecycleOwner(), hasQueue -> {
@@ -691,6 +694,22 @@ public class PlaybackFragment extends Fragment {
         mViewModel.setQueueVisible(updatedQueueVisibility);
     }
 
+    private void updateAppBarMenu(boolean hasQueue, boolean activated) {
+        if (mToolbar == null) {
+            return;
+        }
+        if (hasQueue) {
+            MenuItem queueMenuItem = MenuItem.builder(getContext())
+                    .setIcon(R.drawable.ic_queue_button)
+                    .setActivated(activated)
+                    .setOnClickListener(button -> toggleQueueVisibility())
+                    .build();
+            mToolbar.setMenuItems(Collections.singletonList(queueMenuItem));
+        } else {
+            mToolbar.setMenuItems(Collections.emptyList());
+        }
+    }
+
     private void setQueueState(boolean hasQueue, boolean visible) {
         if (mHasQueue == hasQueue && mQueueIsVisible == visible) {
             return;
@@ -699,18 +718,7 @@ public class PlaybackFragment extends Fragment {
         mHasQueue = hasQueue;
         mQueueIsVisible = visible;
 
-        if (mToolbar != null) {
-            if (mHasQueue) {
-                MenuItem queueMenuItem = MenuItem.builder(getContext())
-                        .setIcon(R.drawable.ic_queue_button)
-                        .setActivated(mQueueIsVisible)
-                        .setOnClickListener(button -> toggleQueueVisibility())
-                        .build();
-                mToolbar.setMenuItems(Collections.singletonList(queueMenuItem));
-            } else {
-                mToolbar.setMenuItems(Collections.emptyList());
-            }
-        }
+        updateAppBarMenu(hasQueue, visible);
 
         if (mQueueIsVisible) {
             ViewUtils.showViewsAnimated(mViewsToShowWhenQueueIsVisible, mFadeDuration);
