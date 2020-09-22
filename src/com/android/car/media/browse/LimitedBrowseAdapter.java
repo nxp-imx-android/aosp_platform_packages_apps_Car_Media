@@ -16,13 +16,11 @@
 
 package com.android.car.media.browse;
 
-import com.android.car.media.R;
-
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.car.media.R;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.ui.recyclerview.DelegatingContentLimitingAdapter;
 
@@ -62,7 +60,8 @@ public class LimitedBrowseAdapter extends DelegatingContentLimitingAdapter<Brows
                         return mMaxSpanSize;
                     }
 
-                    return mBrowseAdapter.getSpanSize(position, mMaxSpanSize);
+                    int itemIndex = positionToIndex(position);
+                    return mBrowseAdapter.getSpanSize(itemIndex, mMaxSpanSize);
                 }
             };
 
