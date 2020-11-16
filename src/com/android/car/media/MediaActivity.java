@@ -527,9 +527,11 @@ public class MediaActivity extends FragmentActivity implements BrowseFragment.Ca
                 Log.i(TAG, "Browsing: " + mediaSource.getDisplayName());
             }
             updateTabs(null);
-            Mode mediaSourceMode = getInnerViewModel().getSavedMode();
-            // Changes the mode regardless of its previous value so that the views can be updated.
-            changeModeInternal(mediaSourceMode, false);
+            // Change the mode regardless of its previous value so that the views can be updated.
+            // The saved mode is ignored as the media apps don't always recreate a playback state
+            // that can be displayed (and some send a displayable state after sending a non
+            // displayable one...).
+            changeModeInternal(Mode.BROWSING, false);
             updateSourcePreferences(mediaSource.getPackageName());
             // Always go through the trampoline activity to keep all the dispatching logic there.
             startActivity(new Intent(Car.CAR_INTENT_ACTION_MEDIA_TEMPLATE));
