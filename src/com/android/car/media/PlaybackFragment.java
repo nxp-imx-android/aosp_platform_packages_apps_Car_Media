@@ -59,7 +59,7 @@ import com.android.car.ui.recyclerview.CarUiRecyclerView;
 import com.android.car.ui.recyclerview.ContentLimiting;
 import com.android.car.ui.recyclerview.ScrollingLimitedViewHolder;
 import com.android.car.ui.toolbar.MenuItem;
-import com.android.car.ui.toolbar.Toolbar;
+import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.ToolbarController;
 import com.android.car.ui.utils.DirectManipulationHelper;
 import com.android.car.uxr.LifeCycleObserverUxrContentLimiter;
@@ -484,8 +484,7 @@ public class PlaybackFragment extends Fragment {
 
         mAppBarController.setTitle(R.string.fragment_playback_title);
         mAppBarController.setBackgroundShown(false);
-        mAppBarController.setNavButtonMode(Toolbar.NavButtonMode.DOWN);
-        mAppBarController.setState(Toolbar.State.SUBPAGE);
+        mAppBarController.setNavButtonMode(NavButtonMode.DOWN);
 
         // Update toolbar's logo
         MediaSourceViewModel mediaSourceViewModel = getMediaSourceViewModel();
