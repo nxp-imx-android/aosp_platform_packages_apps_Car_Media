@@ -234,7 +234,8 @@ public class MediaActivityController extends ViewControllerBase {
 
     MediaActivityController(Callbacks callbacks, MediaItemsRepository mediaItemsRepo,
             CarPackageManager carPackageManager, ViewGroup container) {
-        super(callbacks.getActivity(), carPackageManager, container, R.layout.fragment_browse);
+        super(callbacks.getActivity(), mediaItemsRepo, carPackageManager, container,
+                R.layout.fragment_browse);
 
         FragmentActivity activity = callbacks.getActivity();
         mCallbacks = callbacks;

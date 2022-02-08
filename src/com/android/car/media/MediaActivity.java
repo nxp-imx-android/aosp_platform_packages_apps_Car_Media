@@ -291,7 +291,8 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
     private ErrorScreenController getErrorController() {
         if (mErrorController == null) {
-            mErrorController = new ErrorScreenController(this, mCarPackageManager, mErrorContainer);
+            mErrorController = new ErrorScreenController(this, getMediaItemsRepository(),
+                    mCarPackageManager, mErrorContainer);
             MediaSource mediaSource = getInnerViewModel().getMediaSourceValue();
             mErrorController.onMediaSourceChanged(mediaSource);
         }

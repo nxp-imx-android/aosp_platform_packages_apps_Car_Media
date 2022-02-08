@@ -19,6 +19,7 @@ package com.android.car.media;
 
 import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_BROWSE;
 
+import android.app.PendingIntent;
 import android.car.content.pm.CarPackageManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -39,10 +40,12 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
 import com.android.car.apps.common.util.CarPackageManagerUtils;
+import com.android.car.media.common.browse.MediaBrowserViewModelImpl;
+import com.android.car.media.common.browse.MediaItemsRepository;
+import com.android.car.media.common.source.MediaBrowserConnector;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceViewModel;
 import com.android.car.media.widgets.AppBarController;
-
 import com.android.car.ui.baselayout.Insets;
 import com.android.car.ui.baselayout.InsetsChangedListener;
 import com.android.car.ui.core.CarUi;
@@ -64,10 +67,11 @@ abstract class ViewControllerBase implements InsetsChangedListener {
     final AppBarController mAppBarController;
     final MediaSourceViewModel mMediaSourceVM;
 
+    private PendingIntent mCurrentSourceBrowserSettings;
     private Intent mCurrentSourcePreferences;
 
-    ViewControllerBase(FragmentActivity activity, CarPackageManager carPackageManager,
-            ViewGroup container, @LayoutRes int resource) {
+    ViewControllerBase(FragmentActivity activity, MediaItemsRepository mediaItemsRepo,
+            CarPackageManager carPackageManager, ViewGroup container, @LayoutRes int resource) {
         mActivity = activity;
         Resources res = mActivity.getResources();
         mFadeDuration = res.getInteger(R.integer.new_album_art_fade_in_duration);
@@ -90,6 +94,7 @@ abstract class ViewControllerBase implements InsetsChangedListener {
         mMediaSourceVM = MediaSourceViewModel.get(activity.getApplication(),
                 MEDIA_SOURCE_MODE_BROWSE);
 
+        mediaItemsRepo.getBrowsingState().observe(activity, this::onMediaBrowsingStateChanged);
     }
 
     @Override
@@ -109,10 +114,12 @@ abstract class ViewControllerBase implements InsetsChangedListener {
                 Log.d(TAG, "onSettingsSelection");
             }
             try {
-                if (mCurrentSourcePreferences != null) {
+                if (mCurrentSourceBrowserSettings != null) {
+                    mCurrentSourceBrowserSettings.send();
+                } else if (mCurrentSourcePreferences != null) {
                     mActivity.startActivity(mCurrentSourcePreferences);
                 }
-            } catch (ActivityNotFoundException e) {
+            } catch (ActivityNotFoundException | PendingIntent.CanceledException e) {
                 if (Log.isLoggable(TAG, Log.ERROR)) {
                     Log.e(TAG, "onSettingsSelection " + e);
                 }
@@ -133,38 +140,69 @@ abstract class ViewControllerBase implements InsetsChangedListener {
         Resources res = mActivity.getResources();
         Drawable icon = null;
         Drawable searchIcon = null;
-        String packageName = null;
         if (mediaSource != null) {
             // Drawables can't be shared due to the fact that the layout manager effects the
             // underlying Drawable causing artifacts when then are both "on screen"
             icon = new BitmapDrawable(res, mediaSource.getCroppedPackageIcon());
             searchIcon = new BitmapDrawable(res, mediaSource.getCroppedPackageIcon());
-            packageName = mediaSource.getPackageName();
         }
 
         mAppBarController.setLogo(icon);
         mAppBarController.setSearchIcon(searchIcon);
-        updateSourcePreferences(packageName);
+        mAppBarController.setHasEqualizer(mShouldShowSoundSettings);
     }
 
-    // TODO(b/136274938): display the preference screen for each media service.
-    private void updateSourcePreferences(@Nullable String packageName) {
+    private void onMediaBrowsingStateChanged(MediaBrowserConnector.BrowsingState newBrowsingState) {
+        if (newBrowsingState == null) {
+            Log.e(TAG, "Null browsing state (no media source!)");
+            resetPreferencesState();
+            return;
+        }
+        switch (newBrowsingState.mConnectionStatus) {
+            case CONNECTED:
+                updateSourcePreferences(newBrowsingState);
+                break;
+            case CONNECTING:
+            case DISCONNECTING:
+            case REJECTED:
+            case SUSPENDED:
+                resetPreferencesState();
+                break;
+        }
+    }
+
+    private void resetPreferencesState() {
+        mCurrentSourceBrowserSettings = null;
         mCurrentSourcePreferences = null;
-        if (packageName != null) {
+        mAppBarController.setHasSettings(false);
+    }
+
+    private void updateSourcePreferences(@NonNull MediaBrowserConnector.BrowsingState state) {
+        PendingIntent browserPrefs = MediaBrowserViewModelImpl.getSettingsIntent(state.mBrowser);
+        if (browserPrefs != null) {
+            if (Log.isLoggable(TAG, Log.INFO)) {
+                Log.i(TAG, "Source: " + state.mMediaSource + " has settings intent: "
+                        + browserPrefs);
+            }
+            mCurrentSourceBrowserSettings = browserPrefs;
+            mAppBarController.setHasSettings(true);
+            mAppBarController.setSettingsDistractionOptimized(true);
+        } else {
             Intent prefsIntent = new Intent(Intent.ACTION_APPLICATION_PREFERENCES);
-            prefsIntent.setPackage(packageName);
+            prefsIntent.setPackage(state.mMediaSource.getPackageName());
             ResolveInfo info = mActivity.getPackageManager().resolveActivity(prefsIntent, 0);
             if (info != null && info.activityInfo != null && info.activityInfo.exported) {
                 mCurrentSourcePreferences = new Intent(prefsIntent.getAction())
                         .setClassName(info.activityInfo.packageName, info.activityInfo.name);
+                mAppBarController.setHasSettings(true);
                 mAppBarController.setSettingsDistractionOptimized(
                         CarPackageManagerUtils.isDistractionOptimized(
                                 mCarPackageManager, info.activityInfo));
+
+                if (Log.isLoggable(TAG, Log.INFO)) {
+                    Log.i(TAG, "Source: " + state.mMediaSource + " has prefs intent");
+                }
             }
         }
-        mAppBarController.setHasSettings(mCurrentSourcePreferences != null);
-        mAppBarController.setHasEqualizer(mShouldShowSoundSettings);
     }
-
-
 }

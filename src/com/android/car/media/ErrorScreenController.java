@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
 import com.android.car.media.common.PlaybackErrorViewController;
+import com.android.car.media.common.browse.MediaItemsRepository;
 import com.android.car.media.common.source.MediaSource;
 
 /**
@@ -17,9 +18,9 @@ public class ErrorScreenController extends ViewControllerBase {
 
     private final PlaybackErrorViewController mPlaybackErrorViewController;
 
-    ErrorScreenController(FragmentActivity activity,
+    ErrorScreenController(FragmentActivity activity, MediaItemsRepository mediaItemsRepo,
             CarPackageManager carPackageManager, ViewGroup container) {
-        super(activity, carPackageManager, container, R.layout.fragment_error);
+        super(activity, mediaItemsRepo, carPackageManager, container, R.layout.fragment_error);
 
         mPlaybackErrorViewController = new PlaybackErrorViewController(mContent);
     }
