@@ -24,12 +24,12 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.media.utils.MediaConstants;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.car.media.common.MediaConstants;
 import com.android.car.media.common.MediaItemMetadata;
 
 import java.util.ArrayList;
@@ -318,13 +318,13 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
      */
     private BrowseItemViewType fromMediaHint(int hint) {
         switch(hint) {
-            case MediaConstants.CONTENT_STYLE_GRID_ITEM_HINT_VALUE:
+            case MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM:
                 return BrowseItemViewType.GRID_ITEM;
-            case MediaConstants.CONTENT_STYLE_CATEGORY_GRID_ITEM_HINT_VALUE:
+            case MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_CATEGORY_GRID_ITEM:
                 return BrowseItemViewType.ICON_GRID_ITEM;
-            case MediaConstants.CONTENT_STYLE_CATEGORY_LIST_ITEM_HINT_VALUE:
+            case MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_CATEGORY_LIST_ITEM:
                 return BrowseItemViewType.ICON_LIST_ITEM;
-            case MediaConstants.CONTENT_STYLE_LIST_ITEM_HINT_VALUE:
+            case MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM:
             default:
                 return BrowseItemViewType.LIST_ITEM;
         }
