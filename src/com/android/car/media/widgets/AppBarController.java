@@ -8,12 +8,14 @@ import android.util.Size;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Preconditions;
 
 import com.android.car.media.MediaAppConfig;
 import com.android.car.media.R;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.ui.toolbar.MenuItem;
+import com.android.car.ui.toolbar.MenuItemXmlParserUtil;
 import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.SearchCapabilities;
 import com.android.car.ui.toolbar.SearchConfig;
@@ -21,9 +23,10 @@ import com.android.car.ui.toolbar.SearchMode;
 import com.android.car.ui.toolbar.ToolbarController;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -94,7 +97,6 @@ public class AppBarController {
 
         mUseSourceLogoForAppSelector =
                 context.getResources().getBoolean(R.bool.use_media_source_logo_for_app_selector);
-
         Intent appSelectorIntent = MediaSource.getSourceSelectorIntent(context, false);
 
         mToolbarController.registerSearchListener(query -> {
@@ -103,31 +105,36 @@ public class AppBarController {
         });
         mToolbarController.registerSearchCompletedListener(
                 () -> mListener.onSearch(mSearchQuery));
-        mSearch = MenuItem.builder(context)
-                .setToSearch()
-                .setOnClickListener(v -> mListener.onSearchSelection())
-                .build();
-        mSettings = MenuItem.builder(context)
-                .setToSettings()
-                .setUxRestrictions(MEDIA_UX_RESTRICTION_DEFAULT)
-                .setOnClickListener(v -> mListener.onSettingsSelection())
-                .build();
-        mEqualizer = MenuItem.builder(context)
-                .setTitle(R.string.menu_item_sound_settings_title)
-                .setIcon(R.drawable.ic_equalizer)
-                .setOnClickListener(v -> mListener.onEqualizerSelection())
-                .build();
-        mAppSelector = MenuItem.builder(context)
-                .setTitle(R.string.menu_item_app_selector_title)
-                .setTinted(!mUseSourceLogoForAppSelector)
-                .setIcon(mUseSourceLogoForAppSelector
-                        ? null : context.getDrawable(R.drawable.ic_app_switch))
-                .setOnClickListener(m -> context.startActivity(appSelectorIntent))
-                .build();
-        mToolbarController.setMenuItems(
-                Arrays.asList(mSearch, mEqualizer, mSettings, mAppSelector));
 
+        Map<Integer, MenuItem> menuMap = new HashMap<>();
+        List<MenuItem> menuItems = MenuItemXmlParserUtil.readMenuItemList(mApplicationContext,
+                R.xml.menuitems_browse);
+        menuItems.forEach((item) -> menuMap.put(item.getId(), item));
+
+        mSearch = menuMap.get(R.id.menu_item_search);
+        Preconditions.checkNotNull(mSearch);
+        mSearch.setOnClickListener((menuItem) -> mListener.onSearchSelection());
+
+        mSettings = menuMap.get(R.id.menu_item_setting);
+        Preconditions.checkNotNull(mSettings);
+        mSettings.setOnClickListener((menuItem) -> mListener.onSettingsSelection());
+
+        mEqualizer = menuMap.get(R.id.menu_item_equalizer);
+        Preconditions.checkNotNull(mEqualizer);
+        mEqualizer.setOnClickListener((menuItem) -> mListener.onEqualizerSelection());
+
+        if (mUseSourceLogoForAppSelector) {
+            menuItems.remove(menuMap.get(R.id.menu_item_selector));
+            mAppSelector = menuMap.get(R.id.menu_item_selector_with_source_logo);
+        } else {
+            menuItems.remove(menuMap.get(R.id.menu_item_selector_with_source_logo));
+            mAppSelector = menuMap.get(R.id.menu_item_selector);
+        }
+        Preconditions.checkNotNull(mAppSelector);
+        mAppSelector.setOnClickListener((menuItem) -> context.startActivity(appSelectorIntent));
         mAppSelector.setVisible(appSelectorIntent != null);
+
+        mToolbarController.setMenuItems(menuItems);
     }
 
     /**

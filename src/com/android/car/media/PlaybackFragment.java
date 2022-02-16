@@ -59,6 +59,7 @@ import com.android.car.ui.recyclerview.CarUiRecyclerView;
 import com.android.car.ui.recyclerview.ContentLimiting;
 import com.android.car.ui.recyclerview.ScrollingLimitedViewHolder;
 import com.android.car.ui.toolbar.MenuItem;
+import com.android.car.ui.toolbar.MenuItemXmlParserUtil;
 import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.ToolbarController;
 import com.android.car.ui.utils.DirectManipulationHelper;
@@ -708,11 +709,14 @@ public class PlaybackFragment extends Fragment {
 
     private void updateAppBarMenu(boolean hasQueue) {
         if (hasQueue && mQueueMenuItem == null) {
-            mQueueMenuItem = MenuItem.builder(getContext())
-                    .setIcon(R.drawable.ic_queue_button)
-                    .setActivatable()
-                    .setOnClickListener(button -> toggleQueueVisibility())
-                    .build();
+            List<MenuItem> menuItems = MenuItemXmlParserUtil.readMenuItemList(getContext(),
+                    R.xml.menuitems_playback);
+            menuItems.forEach((menuItem -> {
+                if (menuItem.getId() == R.id.menu_item_queue) {
+                    mQueueMenuItem = menuItem;
+                    mQueueMenuItem.setOnClickListener((item) -> toggleQueueVisibility());
+                }
+            }));
         }
         mAppBarController.setMenuItems(
                 hasQueue ? Collections.singletonList(mQueueMenuItem) : Collections.emptyList());

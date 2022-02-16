@@ -172,6 +172,8 @@ REGENERATE USING packages/apps/Car/tests/tools/rro/generate-overlayable.py
       <item type="style" name="TextAppearance.NoContent"/>
       <item type="style" name="Theme.Media"/>
       <item type="xml" name="uxr_config"/>
+      <item type="xml" name="menuitems_browse"/>
+      <item type="xml" name="menuitems_playback"/>
     </policy>
   </overlayable>
 </resources>
