@@ -16,6 +16,8 @@
 
 package com.android.car.media;
 
+import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
+
 import static com.android.car.apps.common.util.ViewUtils.removeFromParent;
 
 import android.content.res.Resources;
@@ -29,18 +31,23 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.apps.common.util.FutureData;
+import com.android.car.apps.common.util.LiveDataFunctions;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.media.browse.BrowseAdapter;
+import com.android.car.media.browse.BrowseViewHolder;
 import com.android.car.media.browse.LimitedBrowseAdapter;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.browse.MediaBrowserViewModelImpl;
 import com.android.car.media.common.browse.MediaItemsRepository.MediaItemsLiveData;
+import com.android.car.media.common.playback.PlaybackProgress;
+import com.android.car.media.common.playback.PlaybackViewModel;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.ui.FocusArea;
 import com.android.car.ui.baselayout.Insets;
@@ -49,6 +56,7 @@ import com.android.car.uxr.LifeCycleObserverUxrContentLimiter;
 import com.android.car.uxr.UxrContentLimiterImpl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -81,6 +89,8 @@ public class BrowseViewController {
     private final Handler mHandler = new Handler();
 
     private final MediaActivity.ViewModel mViewModel;
+
+    private final PlaybackViewModel mPlaybackViewModel;
 
     private final BrowseAdapter.Observer mBrowseAdapterObserver = new BrowseAdapter.Observer() {
 
@@ -153,6 +163,39 @@ public class BrowseViewController {
         return new BrowseViewController(callbacks, container, null, mediaItems, 0, 0, false);
     }
 
+    /**
+     * {@link RecyclerView.AdapterDataObserver} For listening to payload changes with
+     * {@link BrowseAdapter#updateItemMetaData(MediaItemMetadata)} which calls
+     * {@link androidx.recyclerview.widget.ListAdapter#notifyItemChanged(int, Object)} which then
+     * call this observer.  Without this being set, it would go to default implementation that will
+     * ignore the payload and do a full bind instead of a partial bind.
+     */
+    private static class BrowseAdapterObservable extends RecyclerView.AdapterDataObserver {
+        BrowseAdapter mBrowseAdapter;
+        CarUiRecyclerView mRecyclerView;
+
+        BrowseAdapterObservable(BrowseAdapter browseAdapter,
+                CarUiRecyclerView recyclerView) {
+            mBrowseAdapter = browseAdapter;
+            mRecyclerView = recyclerView;
+        }
+
+        @Override
+        public void onItemRangeChanged(int positionStart, int itemCount,
+                @Nullable Object payload) {
+            if (positionStart >= 0 && itemCount >= 0) {
+                if (mRecyclerView != null && mBrowseAdapter != null) {
+                    BrowseViewHolder holder =
+                            (BrowseViewHolder) mRecyclerView.findViewHolderForAdapterPosition(
+                                    positionStart);
+                    if (holder != null) {
+                        mBrowseAdapter.onBindViewHolder(holder, positionStart,
+                                Collections.singletonList(payload));
+                    }
+                }
+            }
+        }
+    }
 
     private BrowseViewController(Callbacks callbacks, ViewGroup container,
             @Nullable MediaItemMetadata parentItem, MediaItemsLiveData mediaItems,
@@ -183,7 +226,15 @@ public class BrowseViewController {
         FragmentActivity activity = callbacks.getActivity();
         mViewModel = ViewModelProviders.of(activity).get(MediaActivity.ViewModel.class);
 
+        mPlaybackViewModel = PlaybackViewModel.get(activity.getApplication(),
+                MEDIA_SOURCE_MODE_PLAYBACK);
+
+        LiveDataFunctions.pair(mPlaybackViewModel.getProgress(), mPlaybackViewModel.getMetadata())
+            .observe(activity, this::handleProgressUpdate);
+
         BrowseAdapter browseAdapter = new BrowseAdapter(mBrowseList.getContext());
+        browseAdapter.registerAdapterDataObserver(
+                new BrowseAdapterObservable(browseAdapter, mBrowseList));
         mLimitedBrowseAdapter = new LimitedBrowseAdapter(mBrowseList, browseAdapter,
                 mBrowseAdapterObserver);
         mBrowseList.setAdapter(mLimitedBrowseAdapter);
@@ -373,6 +424,20 @@ public class BrowseViewController {
 
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
             Log.v(TAG, "onItemsUpdate " + getDebugInfo());
+        }
+    }
+
+    private void handleProgressUpdate(Pair<PlaybackProgress, MediaItemMetadata> progressMetaPair) {
+        if (progressMetaPair.first == null || progressMetaPair.second == null
+                || mLimitedBrowseAdapter == null) {
+            return;
+        }
+        String mediaId = progressMetaPair.second.getId();
+        MediaItemMetadata adapterMetaData = mLimitedBrowseAdapter.getMediaByMetaData(mediaId);
+        if (adapterMetaData != null) {
+            double progress = progressMetaPair.first.getProgressFraction();
+            adapterMetaData.setProgress(progress);
+            mLimitedBrowseAdapter.updateItemMetaData(adapterMetaData);
         }
     }
 }

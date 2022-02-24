@@ -22,6 +22,7 @@ import android.util.Size;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,6 +31,8 @@ import com.android.car.apps.common.imaging.ImageViewBinder;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.media.MediaAppConfig;
 import com.android.car.media.common.MediaItemMetadata;
+
+import java.util.List;
 
 /**
  * Generic {@link RecyclerView.ViewHolder} to use for all views in the {@link BrowseAdapter}
@@ -44,6 +47,8 @@ public class BrowseViewHolder extends RecyclerView.ViewHolder {
     private final ImageView mTitleExplicitIcon;
     private final ImageView mSubTitleDownloadIcon;
     private final ImageView mSubTitleExplicitIcon;
+    private final ProgressBar mProgressbar;
+    private final ImageView mNewMediaDot;
 
     private final ImageViewBinder<MediaItemMetadata.ArtworkRef> mAlbumArtBinder;
 
@@ -65,6 +70,8 @@ public class BrowseViewHolder extends RecyclerView.ViewHolder {
                 com.android.car.media.R.id.download_icon_with_subtitle);
         mSubTitleExplicitIcon = itemView.findViewById(
                 com.android.car.media.R.id.explicit_icon_with_subtitle);
+        mProgressbar = itemView.findViewById(com.android.car.media.R.id.browse_item_progress_bar);
+        mNewMediaDot = itemView.findViewById(com.android.car.media.R.id.browse_item_progress_new);
 
         Size maxArtSize = MediaAppConfig.getMediaItemsBitmapMaxSize(itemView.getContext());
         mAlbumArtBinder = new ImageViewBinder<>(maxArtSize, mAlbumArt);
@@ -77,6 +84,8 @@ public class BrowseViewHolder extends RecyclerView.ViewHolder {
     public void bind(Context context, BrowseViewData data) {
 
         boolean hasMediaItem = data.mMediaItem != null;
+        boolean hasMediaItemExtras = hasMediaItem && data.mMediaItem.getExtras() != null;
+        boolean hasUpdatedMediaItemExtras = data.mUpdatedMediaItem != null;
         boolean showSubtitle = hasMediaItem && !TextUtils.isEmpty(data.mMediaItem.getSubtitle());
 
         if (mTitle != null) {
@@ -103,6 +112,50 @@ public class BrowseViewHolder extends RecyclerView.ViewHolder {
         ViewUtils.setVisible(mTitleExplicitIcon, !showSubtitle && explicit);
         ViewUtils.setVisible(mSubTitleDownloadIcon, showSubtitle && downloaded);
         ViewUtils.setVisible(mSubTitleExplicitIcon, showSubtitle && explicit);
+
+        if (hasMediaItemExtras && !hasUpdatedMediaItemExtras) {
+            bindProgressUI(data.mMediaItem);
+        }
+
+        if (hasUpdatedMediaItemExtras) {
+            bindProgressUI(data.mUpdatedMediaItem);
+        }
+    }
+
+    /**
+     * Handles updated {@link MediaItemMetadata} for a partial bind
+     * Partial bind is
+     * {@link androidx.recyclerview.widget.ListAdapter#onBindViewHolder(RecyclerView.ViewHolder,
+     * int, List)}
+     *
+     * <p>
+     * Called from {@link DiffUtil.ItemCallback#getChangePayload(Object, Object)} where
+     * items same but contents were different and create payload for partial bind
+     * </p>
+     * <p>
+     * Or called from
+     * {@link androidx.recyclerview.widget.RecyclerView.AdapterDataObserver#onItemRangeChanged(int,
+     * int, Object)}
+     * Where we check if notifyItemChanged() has a payload or not and then call a partial bind
+     * <p/>
+     */
+    public void update(MediaItemMetadata mediaItemMetadata) {
+        boolean hasMediaItem = mediaItemMetadata != null;
+        boolean hasMediaItemExtras = hasMediaItem && mediaItemMetadata.getExtras() != null;
+        if (hasMediaItemExtras) {
+            bindProgressUI(mediaItemMetadata);
+        }
+    }
+
+    /**
+     * Binds UI for playback progress and new media indicator
+     * @param mediaItemMetadata
+     */
+    private void bindProgressUI(MediaItemMetadata mediaItemMetadata) {
+        int playbackStatus = mediaItemMetadata.getPlaybackStatus();
+        BrowseAdapterUtils.handleNewMediaIndicator(playbackStatus, mNewMediaDot);
+        double progress = mediaItemMetadata.getProgress();
+        BrowseAdapterUtils.setPlaybackProgressIndicator(mProgressbar, progress);
     }
 
     void onViewAttachedToWindow(Context context) {

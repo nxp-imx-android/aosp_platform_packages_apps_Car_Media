@@ -30,6 +30,8 @@ import java.util.Objects;
 class BrowseViewData {
     /** {@link com.android.car.media.common.MediaItemMetadata} associated with this item */
     public final MediaItemMetadata mMediaItem;
+    /** Item updated by AAOS player, not by media app**/
+    public MediaItemMetadata mUpdatedMediaItem = null;
     /** View type associated with this item */
     @NonNull
     public final BrowseItemViewType mViewType;
@@ -83,12 +85,16 @@ class BrowseViewData {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BrowseViewData item = (BrowseViewData) o;
-        return Objects.equals(mMediaItem, item.mMediaItem) &&
-                mViewType == item.mViewType;
+
+        return Objects.equals(mMediaItem, item.mMediaItem)
+                && Objects.equals(mUpdatedMediaItem, item.mUpdatedMediaItem)
+                && mViewType == item.mViewType;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(mMediaItem, mViewType);
     }
+
+
 }

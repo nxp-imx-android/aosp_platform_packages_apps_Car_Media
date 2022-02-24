@@ -84,6 +84,24 @@ public class LimitedBrowseAdapter extends DelegatingContentLimitingAdapter<Brows
         // AsyncListDiffer of ListAdapter. This is handled in the OnListChangedListener.
     }
 
+    /**
+     * Wraps {@link BrowseAdapter#getMediaByMetaData(String mediaId)}
+     * @param mediaID
+     * @return
+     */
+    public MediaItemMetadata getMediaByMetaData(String mediaID) {
+        BrowseViewData bvd = mBrowseAdapter.getMediaByMetaData(mediaID);
+        return bvd == null ? null : bvd.mMediaItem;
+    }
+
+    /**
+     * Wrapper for {@link BrowseAdapter#updateItemMetaData(MediaItemMetadata)}
+     * @param mediaItemMetadata
+     */
+    public void updateItemMetaData(MediaItemMetadata mediaItemMetadata) {
+        mBrowseAdapter.updateItemMetaData(mediaItemMetadata);
+    }
+
     private int validateAnchor() {
         if (mAnchorId == null) {
             return 0;

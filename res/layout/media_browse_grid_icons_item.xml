@@ -115,4 +115,30 @@
         app:layout_constraintStart_toEndOf="@+id/explicit_icon_with_subtitle"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <ProgressBar
+        android:id="@+id/browse_item_progress_bar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/media_browse_progress_bar_height"
+        android:layout_marginTop="@dimen/media_browse_progress_bar_top_grid_margin"
+        android:layout_marginBottom="@dimen/media_browse_progress_bar_bottom_grid_margin"
+        android:layout_marginEnd="@dimen/media_browse_progress_bar_bottom_grid_margin"
+        app:layout_goneMarginEnd="@dimen/media_browse_progress_bar_gone_grid_margin"
+        app:layout_constraintTop_toBottomOf="@+id/subtitle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/browse_item_progress_new"
+        android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/browse_item_progress_new"
+        android:src="@drawable/browser_progress_new_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/media_browse_progress_indicator_margin"
+        app:layout_constraintTop_toBottomOf="@+id/subtitle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="gone"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

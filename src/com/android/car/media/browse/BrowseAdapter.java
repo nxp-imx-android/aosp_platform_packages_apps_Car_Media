@@ -17,6 +17,7 @@
 package com.android.car.media.browse;
 
 import android.content.Context;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -80,14 +81,28 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
                 @Override
                 public boolean areItemsTheSame(@NonNull BrowseViewData oldItem,
                         @NonNull BrowseViewData newItem) {
-                    return Objects.equals(oldItem.mMediaItem, newItem.mMediaItem)
+                    return Objects.equals(
+                            oldItem.mMediaItem != null ? oldItem.mMediaItem.getId() : null,
+                            newItem.mMediaItem != null ? newItem.mMediaItem.getId() : null)
                             && Objects.equals(oldItem.mText, newItem.mText);
                 }
 
                 @Override
                 public boolean areContentsTheSame(@NonNull BrowseViewData oldItem,
                         @NonNull BrowseViewData newItem) {
-                    return oldItem.equals(newItem);
+                    return Objects.equals(oldItem, newItem);
+                }
+
+                @Nullable
+                @Override
+                public Object getChangePayload(@NonNull BrowseViewData oldItem,
+                        @NonNull BrowseViewData newItem) {
+                    if (oldItem == newItem || Objects.equals(oldItem.mUpdatedMediaItem,
+                            newItem.mUpdatedMediaItem)) {
+                        return super.getChangePayload(oldItem, newItem);
+                    } else {
+                        return newItem.mUpdatedMediaItem;
+                    }
                 }
             };
 
@@ -174,8 +189,21 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
 
     @Override
     public void onBindViewHolder(@NonNull BrowseViewHolder holder, int position) {
-        BrowseViewData viewData = getItem(position);
-        holder.bind(mContext, viewData);
+        onBindViewHolder(holder, position, new ArrayList<>());
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull BrowseViewHolder holder, int position,
+            @NonNull List<Object> payloads) {
+        //We are only checking for MediaMetaData for now, since this is the only payload we are
+        // setting in getChangePayload
+        if (payloads.isEmpty() || !(payloads.get(0) instanceof MediaItemMetadata)) {
+            BrowseViewData viewData = getItem(position);
+            holder.bind(mContext, viewData);
+        } else {
+            MediaItemMetadata mediaMetadata = (MediaItemMetadata) payloads.get(0);
+            holder.update(mediaMetadata);
+        }
     }
 
     @Override
@@ -327,6 +355,64 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
             case MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM:
             default:
                 return BrowseItemViewType.LIST_ITEM;
+        }
+    }
+
+    /**
+     * <p>
+     * Grabs the {@link BrowseViewData} in adapter by mediaID
+     * </p>
+     * <p>
+     * {@link BrowseViewData} has reference to {@link MediaItemMetadata}
+     * {@link MediaItemMetadata} has reference to {@link MediaDescriptionCompat}
+     * {@link MediaDescriptionCompat} has reference to media id {@link
+     * MediaDescriptionCompat#getMediaId()}
+     * </p>
+     *
+     * @return BrowseViewData
+     */
+    BrowseViewData getMediaByMetaData(String mediaID) {
+        return getCurrentList()
+                .stream()
+                .filter(item -> {
+                            if (item.mMediaItem != null) {
+                                return Objects.equals(item.mMediaItem.getId(), mediaID);
+                            } else {
+                                return false;
+                            }
+                }
+                )
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * <p>
+     * This should call a partial bind with the new metadata as the diff payload,
+     * meaning it will use bind with payload when view is visible or full bind when not.
+     * the payload will then be used to only update the progress bar and not the
+     * whole item's UI.
+     * Use {@link androidx.recyclerview.widget.RecyclerView.AdapterDataObservable} to
+     * listen to when there is a payload change called here.
+     *
+     * Check {@link ListAdapter#onBindViewHolder(RecyclerView.ViewHolder, int, List)}
+     * to see more details on using a payload for a partial bind. Docs doesn't mention the need
+     * for an observable, but you need it, otherwise it will do a full bind
+     *
+     * {@link DiffUtil} also uses partial binds on {@link ListAdapter#submitList(List)} when
+     * we have the same item but with different content, it will then call
+     * {@link DiffUtil.ItemCallback#getChangePayload(Object, Object)} which builds the diff
+     * into a payload and passes it to
+     * {@link ListAdapter#onBindViewHolder(RecyclerView.ViewHolder, int, List)}. 2 different
+     * ways here where we can use a partial bind for performance.
+     * </p>
+     */
+    void updateItemMetaData(MediaItemMetadata mediaItemMetadata) {
+        BrowseViewData browseViewData = getMediaByMetaData(mediaItemMetadata.getId());
+        if (browseViewData != null) {
+            int position = getCurrentList().indexOf(browseViewData);
+            browseViewData.mUpdatedMediaItem = mediaItemMetadata;
+            notifyItemChanged(position, mediaItemMetadata);
         }
     }
 }

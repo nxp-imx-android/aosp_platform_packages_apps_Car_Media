@@ -128,6 +128,20 @@
     <!-- media_browse_icon.xml-->
     <dimen name="media_browse_indicator_size">25dp</dimen>
 
+    <!-- media browse playback progress bar -->
+    <dimen name="media_browse_progress_bar_height">12dp</dimen>
+    <dimen name="media_browse_progress_bar_gone_list_margin">80dp</dimen>
+    <dimen name="media_browse_progress_bar_gone_grid_margin">24dp</dimen>
+    <dimen name="media_browse_progress_bar_end_list_margin">16dp</dimen>
+    <dimen name="media_browse_progress_bar_end_grid_margin">8dp</dimen>
+    <dimen name="media_browse_progress_bar_top_list_margin">8dp</dimen>
+    <dimen name="media_browse_progress_bar_top_grid_margin">12dp</dimen>
+    <dimen name="media_browse_progress_bar_bottom_list_margin">8dp</dimen>
+    <dimen name="media_browse_progress_bar_bottom_grid_margin">8dp</dimen>
+    <dimen name="media_browse_progress_indicator_size">16dp</dimen>
+    <dimen name="media_browse_progress_indicator_margin">8dp</dimen>
+    <dimen name="media_browse_progress_indicator_gone_margin">52dp</dimen>
+
     <!-- metadata_normal.xml -->
     <dimen name="metadata_title_subtitle_margin">@dimen/car_ui_padding_2</dimen>
     <dimen name="metadata_subtitles_margin">@dimen/car_ui_padding_2</dimen>
