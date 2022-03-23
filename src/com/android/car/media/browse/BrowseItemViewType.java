@@ -31,10 +31,7 @@ public enum BrowseItemViewType {
     /** A list item with a medium image. */
     LIST_ITEM(com.android.car.media.R.layout.media_browse_list_item),
     /** A list item with a small icon. */
-    ICON_LIST_ITEM(com.android.car.media.R.layout.media_browse_list_icons_item),
-
-    /** A spacer view that creates additional padding at the edges of the list, and for headers */
-    SPACER(com.android.car.media.R.layout.media_browse_spacer);
+    ICON_LIST_ITEM(com.android.car.media.R.layout.media_browse_list_icons_item);
 
     @LayoutRes
     private final int mLayoutId;

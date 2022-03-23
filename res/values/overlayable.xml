@@ -134,7 +134,6 @@ REGENERATE USING packages/apps/Car/tests/tools/rro/generate-overlayable.py
       <item type="layout" name="media_browse_header_item"/>
       <item type="layout" name="media_browse_list_icons_item"/>
       <item type="layout" name="media_browse_list_item"/>
-      <item type="layout" name="media_browse_spacer"/>
       <item type="layout" name="metadata_normal"/>
       <item type="layout" name="queue_list_item"/>
       <item type="layout" name="time_progress_text"/>

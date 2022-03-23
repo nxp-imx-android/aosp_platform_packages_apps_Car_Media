@@ -241,10 +241,6 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
             result.add(new BrowseViewData(title, BrowseItemViewType.HEADER, listener));
         }
 
-        void addSpacer() {
-            result.add(new BrowseViewData(BrowseItemViewType.SPACER, null));
-        }
-
         List<BrowseViewData> build() {
             return result;
         }
@@ -270,8 +266,6 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
 
         if (mTitle != null) {
             itemsBuilder.addTitle(mTitle, Observer::onTitleClicked);
-        } else if (!items.isEmpty() && items.get(0).getTitleGrouping() == null) {
-            itemsBuilder.addSpacer();
         }
         String currentTitleGrouping = null;
         for (MediaItemMetadata item : items) {
