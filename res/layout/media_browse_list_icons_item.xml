@@ -33,8 +33,7 @@
         style="@style/MediaIconContainerStyle"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-    />
+        app:layout_constraintStart_toStartOf="parent"/>
 
     <!-- This guideline is necessary because there are icons preceding the text which typically have
       visibility GONE, which prevents margins applied to the leftmost view from applying to the
@@ -110,13 +109,41 @@
         android:layout_height="wrap_content"
         android:singleLine="true"
         app:layout_constraintTop_toBottomOf="@+id/title"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/browse_item_progress_bar"
         app:layout_constraintStart_toEndOf="@+id/explicit_icon_with_subtitle"
         app:layout_constraintEnd_toStartOf="@+id/right_arrow"/>
 
+
+    <ProgressBar
+        android:id="@+id/browse_item_progress_bar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/media_browse_progress_bar_height"
+        android:layout_marginBottom="@dimen/media_browse_progress_bar_bottom_list_margin"
+        android:layout_marginEnd="@dimen/media_browse_progress_bar_bottom_list_margin"
+        app:layout_goneMarginEnd="@dimen/media_browse_progress_bar_gone_list_margin"
+        app:layout_constraintTop_toBottomOf="@+id/subtitle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/explicit_icon_with_title"
+        app:layout_constraintEnd_toStartOf="@+id/browse_item_progress_new"
+        android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/browse_item_progress_new"
+        android:src="@drawable/browser_progress_new_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/media_browse_progress_indicator_margin"
+        android:layout_gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/right_arrow"
+        app:layout_goneMarginEnd="@dimen/media_browse_progress_bar_gone_list_margin"
+        android:visibility="gone"/>
+
     <ImageView
         android:id="@+id/right_arrow"
-        android:src="@drawable/ic_chevron_right"
+        style="@style/BrowseListItemRightArrowStyle"
         android:layout_width="@dimen/media_browse_list_item_arrow_size"
         android:layout_height="@dimen/media_browse_list_item_arrow_size"
         android:layout_marginTop="@dimen/media_browse_subtitle_margin_top"
