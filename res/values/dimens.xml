@@ -154,6 +154,12 @@
     <dimen name="fragment_error_button_margin_bottom">@dimen/car_ui_padding_4</dimen>
     <dimen name="fragment_error_message_margin_x">@dimen/car_ui_margin</dimen>
 
+    <!-- toast_error.xml -->
+    <dimen name="toast_error_icon_size">24dp</dimen>
+    <dimen name="toast_error_height">36dp</dimen>
+    <dimen name="toast_error_text_margin_start">8dp</dimen>
+    <dimen name="toast_error_offset_y">18dp</dimen>
+
     <!-- fragment_playback.xml -->
     <!-- The length of playback queue fading edge, equals 0.1 * window_height. -->
     <dimen name="queue_fading_edge_length">81dp</dimen>
