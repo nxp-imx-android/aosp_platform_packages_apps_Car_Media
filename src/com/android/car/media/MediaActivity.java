@@ -54,6 +54,7 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.android.car.apps.common.util.CarPackageManagerUtils;
 import com.android.car.apps.common.util.FutureData;
+import com.android.car.apps.common.util.IntentUtils;
 import com.android.car.apps.common.util.VectorMath;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.media.common.MediaItemMetadata;
@@ -226,6 +227,10 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
             // set the source again.
             setIntent(null);
         }
+
+        if (mMode == Mode.FATAL_ERROR && mErrorController != null) {
+            mErrorController.onResume();
+        }
     }
 
     @Override
@@ -259,7 +264,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
         @Override
         public void handleNewPlaybackState(String displayedMessage, PendingIntent intent,
-                String label) {
+                boolean canAutoLaunch, String label) {
             maybeCancelToast();
             maybeCancelDialog();
 
@@ -276,7 +281,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
                     boolean isDistractionOptimized =
                             intent != null && CarPackageManagerUtils.isDistractionOptimized(
                                     mCarPackageManager, intent);
-                    getErrorController().setError(displayedMessage, label, intent,
+                    getErrorController().setError(displayedMessage, label, intent, canAutoLaunch,
                             isDistractionOptimized);
                     isFatalError = true;
                 }
@@ -304,15 +309,8 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
         AlertDialogBuilder dialog = new AlertDialogBuilder(this);
         mDialog = dialog.setMessage(message)
                 .setNegativeButton(negativeButtonText, null)
-                .setPositiveButton(positiveBtnText, (dialogInterface, i) -> {
-                    try {
-                        intent.send();
-                    } catch (PendingIntent.CanceledException e) {
-                        if (Log.isLoggable(TAG, Log.ERROR)) {
-                            Log.e(TAG, "Pending intent canceled");
-                        }
-                    }
-                })
+                .setPositiveButton(positiveBtnText,
+                        (dialogInterface, i) -> IntentUtils.sendIntent(intent))
                 .show();
     }
 

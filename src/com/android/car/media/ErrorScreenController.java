@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
+import com.android.car.apps.common.util.IntentUtils;
 import com.android.car.media.common.PlaybackErrorViewController;
 import com.android.car.media.common.browse.MediaItemsRepository;
 import com.android.car.media.common.source.MediaSource;
@@ -17,6 +18,8 @@ import com.android.car.media.common.source.MediaSource;
 public class ErrorScreenController extends ViewControllerBase {
 
     private final PlaybackErrorViewController mPlaybackErrorViewController;
+    private PendingIntent mPendingIntent;
+    private boolean mCanAutoLaunch;
 
     ErrorScreenController(FragmentActivity activity, MediaItemsRepository mediaItemsRepo,
             CarPackageManager carPackageManager, ViewGroup container) {
@@ -36,7 +39,21 @@ public class ErrorScreenController extends ViewControllerBase {
     }
 
     public void setError(String message, String label, PendingIntent pendingIntent,
-            boolean distractionOptimized) {
+            boolean canAutoLaunch, boolean distractionOptimized) {
+        mPendingIntent = pendingIntent;
+        mCanAutoLaunch = canAutoLaunch;
         mPlaybackErrorViewController.setError(message, label, pendingIntent, distractionOptimized);
+        maybeLaunchIntent();
+    }
+
+    /** Should be called when the activity is resumed. */
+    public void onResume() {
+        maybeLaunchIntent();
+    }
+
+    private void maybeLaunchIntent() {
+        if (mCanAutoLaunch && mPendingIntent != null) {
+            IntentUtils.sendIntent(mPendingIntent);
+        }
     }
 }
