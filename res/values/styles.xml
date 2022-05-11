@@ -94,4 +94,8 @@
     </style>
 
     <style name="MediaIconContainerStyle"/>
+
+    <style name="ToastErrorIconStyle"/>
+
+    <style name="ToastErrorTextStyle"/>
 </resources>

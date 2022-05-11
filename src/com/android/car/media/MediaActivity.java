@@ -16,6 +16,7 @@
 package com.android.car.media;
 
 import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_BROWSE;
+import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
 
 import static com.android.car.apps.common.util.LiveDataFunctions.dataOf;
 import static com.android.car.apps.common.util.VectorMath.EPSILON;
@@ -32,15 +33,19 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
 import android.view.GestureDetector;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -83,7 +88,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     private int mFadeDuration;
 
     /** Models */
-    private PlaybackViewModel.PlaybackController mPlaybackController;
+    private PlaybackViewModel.PlaybackController mBrowsePlaybackController;
 
     /** Layout views */
     private PlaybackFragment mPlaybackFragment;
@@ -109,8 +114,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     private float mCloseVectorY;
     private float mCloseVectorNorm;
 
-
-    private PlaybackFragment.PlaybackFragmentListener mPlaybackFragmentListener =
+    private final PlaybackFragment.PlaybackFragmentListener mPlaybackFragmentListener =
             () -> changeMode(Mode.BROWSING);
 
     private MediaTrampolineHelper mMediaTrampoline;
@@ -140,15 +144,16 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
         mCloseVectorY = res.getFloat(R.dimen.media_activity_close_vector_y);
         mCloseVectorNorm = VectorMath.norm2(mCloseVectorX, mCloseVectorY);
 
-        // TODO(b/151174811): Use appropriate modes, instead of just MEDIA_SOURCE_MODE_BROWSE
-        PlaybackViewModel playbackViewModel = getPlaybackViewModel();
+        PlaybackViewModel playbackViewModelBrowse = getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE);
+        PlaybackViewModel playbackViewModelPlayback = getPlaybackViewModel(
+                MEDIA_SOURCE_MODE_PLAYBACK);
         ViewModel localViewModel = getInnerViewModel();
         // We can't rely on savedInstanceState to determine whether the model has been initialized
         // as on a config change savedInstanceState != null and the model is initialized, but if
         // the app was killed by the system then savedInstanceState != null and the model is NOT
         // initialized...
         if (localViewModel.needsInitialization()) {
-            localViewModel.init(playbackViewModel);
+            localViewModel.init(playbackViewModelBrowse);
         }
         mMode = localViewModel.getSavedMode();
 
@@ -162,7 +167,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
         Size maxArtSize = MediaAppConfig.getMediaItemsBitmapMaxSize(this);
         mMiniPlaybackControls = findViewById(R.id.minimized_playback_controls);
-        mMiniPlaybackControls.setModel(playbackViewModel, this, maxArtSize);
+        mMiniPlaybackControls.setModel(playbackViewModelPlayback, this, maxArtSize);
         mMiniPlaybackControls.setOnClickListener(view -> changeMode(Mode.PLAYBACK));
 
         mFadeDuration = res.getInteger(R.integer.new_album_art_fade_in_duration);
@@ -173,14 +178,18 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
                 .replace(R.id.playback_container, mPlaybackFragment)
                 .commit();
 
-        playbackViewModel.getPlaybackController().observe(this,
+        playbackViewModelBrowse.getPlaybackController().observe(this,
                 playbackController -> {
                     if (playbackController != null) playbackController.prepare();
-                    mPlaybackController = playbackController;
+                    mBrowsePlaybackController = playbackController;
                 });
 
-        playbackViewModel.getPlaybackStateWrapper().observe(this,
-                state -> handlePlaybackState(state, true));
+        playbackViewModelBrowse.getPlaybackStateWrapper().observe(this,
+                state -> handlePlaybackState(state, true,
+                        playbackViewModelBrowse.getMediaSource().getValue()));
+        playbackViewModelPlayback.getPlaybackStateWrapper().observe(this,
+                state -> handlePlaybackState(state, true,
+                        playbackViewModelPlayback.getMediaSource().getValue()));
 
         mCar = Car.createCar(this);
         mCarPackageManager = (CarPackageManager) mCar.getCarManager(Car.PACKAGE_SERVICE);
@@ -246,36 +255,48 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     }
 
     private void handlePlaybackState(PlaybackViewModel.PlaybackStateWrapper state,
-            boolean ignoreSameState) {
-        mErrorsHelper.handlePlaybackState(TAG, state, ignoreSameState);
+            boolean ignoreSameState, MediaSource mediaSource) {
+        mErrorsHelper.handlePlaybackState(TAG, state, ignoreSameState, mediaSource);
     }
 
     private final PlaybackErrorsHelper mErrorsHelper = new PlaybackErrorsHelper(this) {
 
         @Override
         public void handlePlaybackState(@NonNull String tag,
-                PlaybackViewModel.PlaybackStateWrapper state, boolean ignoreSameState) {
-
+                PlaybackViewModel.PlaybackStateWrapper state, boolean ignoreSameState,
+                MediaSource mediaSource) {
             // TODO rethink interactions between customized layouts and dynamic visibility.
             mCanShowMiniPlaybackControls = (state != null) && state.shouldDisplay();
             updateMiniPlaybackControls(true);
-            super.handlePlaybackState(tag, state, ignoreSameState);
+            super.handlePlaybackState(tag, state, ignoreSameState, mediaSource);
         }
 
         @Override
         public void handleNewPlaybackState(String displayedMessage, PendingIntent intent,
-                boolean canAutoLaunch, String label) {
+                boolean canAutoLaunch, String label, MediaSource mediaSource) {
             maybeCancelToast();
             maybeCancelDialog();
 
+            MediaSource playbackSource =
+                    getPlaybackViewModel(MEDIA_SOURCE_MODE_PLAYBACK).getMediaSource().getValue();
+            MediaSource browseSource =
+                    getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE).getMediaSource().getValue();
+
+            boolean areSourcesDifferent = !Objects.equals(playbackSource, browseSource);
+            boolean isPlaybackMediaSource = Objects.equals(playbackSource, mediaSource);
+
             boolean isFatalError = false;
             if (!TextUtils.isEmpty(displayedMessage)) {
-                if (mMediaActivityController.browseTreeHasChildren()) {
+                // If browse content -> not fatal, if no browse content and sources are different
+                // we cannot show playback error in browse space.
+                if (mMediaActivityController.browseTreeHasChildren()
+                        || (areSourcesDifferent && isPlaybackMediaSource)) {
+                    Drawable icon = mediaSource != null ? mediaSource.getIcon() : null;
                     if (intent != null && !isUxRestricted()) {
                         showDialog(intent, displayedMessage, label,
-                                getString(android.R.string.cancel));
+                                getString(android.R.string.cancel), icon);
                     } else {
-                        showToast(displayedMessage);
+                        showToast(displayedMessage, icon);
                     }
                 } else {
                     boolean isDistractionOptimized =
@@ -305,9 +326,10 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     }
 
     private void showDialog(PendingIntent intent, String message, String positiveBtnText,
-            String negativeButtonText) {
+            String negativeButtonText, @Nullable Drawable icon) {
         AlertDialogBuilder dialog = new AlertDialogBuilder(this);
         mDialog = dialog.setMessage(message)
+                .setIcon(icon)
                 .setNegativeButton(negativeButtonText, null)
                 .setPositiveButton(positiveBtnText,
                         (dialogInterface, i) -> IntentUtils.sendIntent(intent))
@@ -321,8 +343,18 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
         }
     }
 
-    private void showToast(String message) {
-        mToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
+    private void showToast(String message, @Nullable Drawable icon) {
+        mToast = Toast.makeText(this.getApplicationContext(), message, Toast.LENGTH_LONG);
+        int offset = getResources().getDimensionPixelOffset(R.dimen.toast_error_offset_y);
+        mToast.setGravity(Gravity.BOTTOM, 0, offset);
+
+        if (icon != null) {
+            View view = getLayoutInflater().inflate(R.layout.toast_error, null);
+            ((ImageView) view.findViewById(R.id.toast_error_icon)).setImageDrawable(icon);
+            ((TextView) view.findViewById(R.id.toast_error_message)).setText(message);
+            mToast.setView(view);
+        }
+
         mToast.show();
     }
 
@@ -497,7 +529,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
     @Override
     public void onPlayableItemClicked(@NonNull MediaItemMetadata item) {
-        mPlaybackController.playItem(item);
+        mBrowsePlaybackController.playItem(item);
         boolean switchToPlayback = getResources().getBoolean(
                 R.bool.switch_to_playback_view_when_playable_item_is_clicked);
         if (switchToPlayback) {
@@ -508,8 +540,9 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
     @Override
     public void onRootLoaded() {
-        PlaybackViewModel playbackViewModel = getPlaybackViewModel();
-        handlePlaybackState(playbackViewModel.getPlaybackStateWrapper().getValue(), false);
+        PlaybackViewModel playbackViewModel = getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE);
+        handlePlaybackState(playbackViewModel.getPlaybackStateWrapper().getValue(), false,
+                playbackViewModel.getMediaSource().getValue());
     }
 
     @Override
@@ -521,8 +554,8 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
         return MediaItemsRepository.get(getApplication(), MEDIA_SOURCE_MODE_BROWSE);
     }
 
-    private PlaybackViewModel getPlaybackViewModel() {
-        return PlaybackViewModel.get(getApplication(), MEDIA_SOURCE_MODE_BROWSE);
+    private PlaybackViewModel getPlaybackViewModel(int mode) {
+        return PlaybackViewModel.get(getApplication(), mode);
     }
 
     private ViewModel getInnerViewModel() {
@@ -548,7 +581,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
         private final MutableLiveData<FutureData<MediaSource>> mBrowsedMediaSource =
                 dataOf(FutureData.newLoadingData());
         private final Map<MediaSource, MediaServiceState> mStates = new HashMap<>();
-        private MutableLiveData<Boolean> mIsMiniControlsVisible = new MutableLiveData<>();
+        private final MutableLiveData<Boolean> mIsMiniControlsVisible = new MutableLiveData<>();
 
         public ViewModel(@NonNull Application application) {
             super(application);

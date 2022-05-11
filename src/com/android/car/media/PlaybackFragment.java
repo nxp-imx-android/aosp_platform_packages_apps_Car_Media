@@ -16,7 +16,7 @@
 
 package com.android.car.media;
 
-import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_BROWSE;
+import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -87,6 +87,7 @@ public class PlaybackFragment extends Fragment {
     private View mBackgroundScrim;
     private View mControlBarScrim;
     private PlaybackControlsActionBar mPlaybackControls;
+    private PlaybackViewModel mPlaybackViewModel;
     private QueueItemsAdapter mQueueAdapter;
     private CarUiRecyclerView mQueue;
     private ViewGroup mSeekBarContainer;
@@ -473,6 +474,9 @@ public class PlaybackFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        mPlaybackViewModel = PlaybackViewModel.get(getActivity().getApplication(),
+                MEDIA_SOURCE_MODE_PLAYBACK);
+
         mAlbumBackground = view.findViewById(R.id.playback_background);
         mQueue = view.findViewById(R.id.queue_list);
         mSeekBarContainer = view.findViewById(R.id.playback_seek_bar_container);
@@ -521,7 +525,7 @@ public class PlaybackFragment extends Fragment {
                         R.bool.use_media_source_color_for_progress_bar);
                 int defaultColor = res.getColor(R.color.progress_bar_highlight, null);
                 if (useMediaSourceColor) {
-                    getPlaybackViewModel().getMediaSourceColors().observe(getViewLifecycleOwner(),
+                    mPlaybackViewModel.getMediaSourceColors().observe(getViewLifecycleOwner(),
                             sourceColors -> {
                                 int color = sourceColors != null
                                         ? sourceColors.getAccentColor(defaultColor)
@@ -538,7 +542,7 @@ public class PlaybackFragment extends Fragment {
 
         mViewModel = ViewModelProviders.of(requireActivity()).get(MediaActivity.ViewModel.class);
 
-        getPlaybackViewModel().getPlaybackController().observe(getViewLifecycleOwner(),
+        mPlaybackViewModel.getPlaybackController().observe(getViewLifecycleOwner(),
                 controller -> mController = controller);
         initPlaybackControls(view.findViewById(R.id.playback_controls));
         initMetadataController(view);
@@ -564,7 +568,7 @@ public class PlaybackFragment extends Fragment {
                 MediaAppConfig.getMediaItemsBitmapMaxSize(getContext()),
                 drawable -> mAlbumBackground.setBackgroundDrawable(drawable));
 
-        getPlaybackViewModel().getMetadata().observe(getViewLifecycleOwner(),
+        mPlaybackViewModel.getMetadata().observe(getViewLifecycleOwner(),
                 item -> mAlbumArtBinder.setImage(PlaybackFragment.this.getContext(),
                         item != null ? item.getArtworkKey() : null));
 
@@ -586,7 +590,7 @@ public class PlaybackFragment extends Fragment {
 
     private void initPlaybackControls(PlaybackControlsActionBar playbackControls) {
         mPlaybackControls = playbackControls;
-        mPlaybackControls.setModel(getPlaybackViewModel(), getViewLifecycleOwner());
+        mPlaybackControls.setModel(mPlaybackViewModel, getViewLifecycleOwner());
         mPlaybackControls.registerExpandCollapseCallback((expanding) -> {
             Resources res = getContext().getResources();
             int millis = expanding ? res.getInteger(R.integer.control_bar_expand_anim_duration) :
@@ -634,7 +638,7 @@ public class PlaybackFragment extends Fragment {
                 getResources().getBoolean(R.bool.queue_fading_edge_length_enabled));
         mQueueAdapter = new QueueItemsAdapter();
 
-        getPlaybackViewModel().getPlaybackStateWrapper().observe(getViewLifecycleOwner(),
+        mPlaybackViewModel.getPlaybackStateWrapper().observe(getViewLifecycleOwner(),
                 state -> {
                     Long itemId = (state != null) ? state.getActiveQueueItemId() : null;
                     if (!Objects.equals(mActiveQueueItemId, itemId)) {
@@ -655,15 +659,17 @@ public class PlaybackFragment extends Fragment {
             mQueueMenuItem.setActivated(mQueueIsVisible);
         }
 
-        getPlaybackViewModel().getQueue().observe(this, this::setQueue);
+        mPlaybackViewModel.getQueue().observe(this, this::setQueue);
 
-        getPlaybackViewModel().hasQueue().observe(getViewLifecycleOwner(), hasQueue -> {
-            boolean enableQueue = (hasQueue != null) && hasQueue;
-            boolean isQueueVisible = enableQueue && mViewModel.getQueueVisible();
+        mPlaybackViewModel.hasQueue().observe(getViewLifecycleOwner(),
+                hasQueue -> {
+                    boolean enableQueue = (hasQueue != null) && hasQueue;
+                    boolean isQueueVisible = enableQueue && mViewModel.getQueueVisible();
+                    setQueueState(enableQueue, isQueueVisible);
+                });
 
-            setQueueState(enableQueue, isQueueVisible);
-        });
-        getPlaybackViewModel().getProgress().observe(getViewLifecycleOwner(),
+        mPlaybackViewModel.getProgress().observe(
+                getViewLifecycleOwner(),
                 playbackProgress ->
                 {
                     mQueueAdapter.setCurrentTime(playbackProgress.getCurrentTimeText().toString());
@@ -688,9 +694,9 @@ public class PlaybackFragment extends Fragment {
         SeekBar seekbar = mShowLinearProgressBar ? mSeekBar : null;
 
         Size maxArtSize = MediaAppConfig.getMediaItemsBitmapMaxSize(view.getContext());
-        mMetadataController = new MetadataController(getViewLifecycleOwner(),
-                getPlaybackViewModel(), title, artist, albumTitle, outerSeparator,
-                curTime, innerSeparator, maxTime, seekbar, albumArt, maxArtSize);
+        mMetadataController = new MetadataController(getViewLifecycleOwner(), mPlaybackViewModel,
+                title, artist, albumTitle, outerSeparator, curTime, innerSeparator, maxTime,
+                seekbar, albumArt, null, maxArtSize);
     }
 
     /**
@@ -763,13 +769,8 @@ public class PlaybackFragment extends Fragment {
         mPlaybackControls.close();
     }
 
-    // TODO(b/151174811): Use appropriate modes, instead of just MEDIA_SOURCE_MODE_BROWSE
-    private PlaybackViewModel getPlaybackViewModel() {
-        return PlaybackViewModel.get(getActivity().getApplication(), MEDIA_SOURCE_MODE_BROWSE);
-    }
-
     private MediaSourceViewModel getMediaSourceViewModel() {
-        return MediaSourceViewModel.get(getActivity().getApplication(), MEDIA_SOURCE_MODE_BROWSE);
+        return MediaSourceViewModel.get(getActivity().getApplication(), MEDIA_SOURCE_MODE_PLAYBACK);
     }
 
     private void setSeekBarColor(int color) {
