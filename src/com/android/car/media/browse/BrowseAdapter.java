@@ -303,10 +303,10 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
                 itemsBuilder.addTitle(titleGrouping, null);
             }
             if (item.isBrowsable()) {
-                itemsBuilder.addItem(item, getBrowsableViewType(mParentMediaItem),
+                itemsBuilder.addItem(item, getBrowsableViewType(mParentMediaItem, item),
                         observer -> observer.onBrowsableItemClicked(item));
             } else if (item.isPlayable()) {
-                itemsBuilder.addItem(item, getPlayableViewType(mParentMediaItem),
+                itemsBuilder.addItem(item, getPlayableViewType(mParentMediaItem, item),
                         observer -> observer.onPlayableItemClicked(item));
             }
         }
@@ -314,24 +314,36 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
         return itemsBuilder.build();
     }
 
-    private BrowseItemViewType getBrowsableViewType(@Nullable MediaItemMetadata mediaItem) {
-        if (mediaItem == null) {
+    private BrowseItemViewType getBrowsableViewType(@Nullable MediaItemMetadata parentMediaItem,
+            @NonNull MediaItemMetadata mediaItem) {
+        if (mediaItem.getSingleItemContentStyleHint() > 0) {
+            return fromMediaHint(mediaItem.getSingleItemContentStyleHint());
+        }
+
+        if (parentMediaItem == null) {
             return BrowseItemViewType.LIST_ITEM;
         }
-        if (mediaItem.getBrowsableContentStyleHint() == 0) {
+
+        if (parentMediaItem.getBrowsableContentStyleHint() == 0) {
             return mRootBrowsableViewType;
         }
-        return fromMediaHint(mediaItem.getBrowsableContentStyleHint());
+        return fromMediaHint(parentMediaItem.getBrowsableContentStyleHint());
     }
 
-    private BrowseItemViewType getPlayableViewType(@Nullable MediaItemMetadata mediaItem) {
-        if (mediaItem == null) {
+    private BrowseItemViewType getPlayableViewType(@Nullable MediaItemMetadata parentMediaItem,
+            @NonNull MediaItemMetadata mediaItem) {
+        if (mediaItem.getSingleItemContentStyleHint() > 0) {
+            return fromMediaHint(mediaItem.getSingleItemContentStyleHint());
+        }
+
+        if (parentMediaItem == null) {
             return BrowseItemViewType.LIST_ITEM;
         }
-        if (mediaItem.getPlayableContentStyleHint() == 0) {
+
+        if (parentMediaItem.getPlayableContentStyleHint() == 0) {
             return mRootPlayableViewType;
         }
-        return fromMediaHint(mediaItem.getPlayableContentStyleHint());
+        return fromMediaHint(parentMediaItem.getPlayableContentStyleHint());
     }
 
     /**
