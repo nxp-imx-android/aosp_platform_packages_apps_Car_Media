@@ -327,9 +327,14 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
     private void showDialog(PendingIntent intent, String message, String positiveBtnText,
             String negativeButtonText, @Nullable Drawable icon) {
+        boolean showTitleIcon = getResources().getBoolean(R.bool.show_playback_source_id);
+        String title = getPlaybackViewModel(
+                MEDIA_SOURCE_MODE_PLAYBACK).getMediaSource().getValue().getDisplayName().toString();
+
         AlertDialogBuilder dialog = new AlertDialogBuilder(this);
         mDialog = dialog.setMessage(message)
-                .setIcon(icon)
+                .setTitle(showTitleIcon ? title : null)
+                .setIcon(showTitleIcon ? icon : null)
                 .setNegativeButton(negativeButtonText, null)
                 .setPositiveButton(positiveBtnText,
                         (dialogInterface, i) -> IntentUtils.sendIntent(intent))
@@ -348,7 +353,9 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
         int offset = getResources().getDimensionPixelOffset(R.dimen.toast_error_offset_y);
         mToast.setGravity(Gravity.BOTTOM, 0, offset);
 
-        if (icon != null) {
+        boolean showIcon = getResources().getBoolean(R.bool.show_playback_source_id);
+
+        if (icon != null && showIcon) {
             View view = getLayoutInflater().inflate(R.layout.toast_error, null);
             ((ImageView) view.findViewById(R.id.toast_error_icon)).setImageDrawable(icon);
             ((TextView) view.findViewById(R.id.toast_error_message)).setText(message);
