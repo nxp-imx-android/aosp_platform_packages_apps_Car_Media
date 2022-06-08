@@ -185,10 +185,10 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
                 });
 
         playbackViewModelBrowse.getPlaybackStateWrapper().observe(this,
-                state -> handlePlaybackState(state, true,
+                state -> handlePlaybackStateFromBrowseSource(state, true,
                         playbackViewModelBrowse.getMediaSource().getValue()));
         playbackViewModelPlayback.getPlaybackStateWrapper().observe(this,
-                state -> handlePlaybackState(state, true,
+                state -> handlePlaybackStateFromPlaybackSource(state,
                         playbackViewModelPlayback.getMediaSource().getValue()));
 
         mCar = Car.createCar(this);
@@ -254,50 +254,22 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
                 CarUxRestrictionsUtil.getInstance(this).getCurrentRestrictions());
     }
 
-    private void handlePlaybackState(PlaybackViewModel.PlaybackStateWrapper state,
-            boolean ignoreSameState, MediaSource mediaSource) {
-        mErrorsHelper.handlePlaybackState(TAG, state, ignoreSameState, mediaSource);
+    private void handlePlaybackStateFromBrowseSource(
+            PlaybackViewModel.PlaybackStateWrapper state, boolean ignoreSameState,
+            MediaSource mediaSource) {
+        mErrorsFromBrowseHelper.handlePlaybackState(TAG, state, ignoreSameState, mediaSource);
     }
 
-    private final PlaybackErrorsHelper mErrorsHelper = new PlaybackErrorsHelper(this) {
-
-        @Override
-        public void handlePlaybackState(@NonNull String tag,
-                PlaybackViewModel.PlaybackStateWrapper state, boolean ignoreSameState,
-                MediaSource mediaSource) {
-            // TODO rethink interactions between customized layouts and dynamic visibility.
-            mCanShowMiniPlaybackControls = (state != null) && state.shouldDisplay();
-            updateMiniPlaybackControls(true);
-            super.handlePlaybackState(tag, state, ignoreSameState, mediaSource);
-        }
-
+    private final PlaybackErrorsHelper mErrorsFromBrowseHelper = new PlaybackErrorsHelper(this) {
         @Override
         public void handleNewPlaybackState(String displayedMessage, PendingIntent intent,
                 boolean canAutoLaunch, String label, MediaSource mediaSource) {
-            maybeCancelToast();
-            maybeCancelDialog();
-
-            MediaSource playbackSource =
-                    getPlaybackViewModel(MEDIA_SOURCE_MODE_PLAYBACK).getMediaSource().getValue();
-            MediaSource browseSource =
-                    getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE).getMediaSource().getValue();
-
-            boolean areSourcesDifferent = !Objects.equals(playbackSource, browseSource);
-            boolean isPlaybackMediaSource = Objects.equals(playbackSource, mediaSource);
 
             boolean isFatalError = false;
             if (!TextUtils.isEmpty(displayedMessage)) {
-                // If browse content -> not fatal, if no browse content and sources are different
-                // we cannot show playback error in browse space.
-                if (mMediaActivityController.browseTreeHasChildren()
-                        || (areSourcesDifferent && isPlaybackMediaSource)) {
-                    Drawable icon = mediaSource != null ? mediaSource.getIcon() : null;
-                    if (intent != null && !isUxRestricted()) {
-                        showDialog(intent, displayedMessage, label,
-                                getString(android.R.string.cancel), icon);
-                    } else {
-                        showToast(displayedMessage, icon);
-                    }
+                // If browse content -> not fatal
+                if (mMediaActivityController.browseTreeHasChildren()) {
+                    showToastOrDialog(displayedMessage, intent, label, mediaSource);
                 } else {
                     boolean isDistractionOptimized =
                             intent != null && CarPackageManagerUtils.isDistractionOptimized(
@@ -307,6 +279,8 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
                     isFatalError = true;
                 }
             }
+
+            // Only the browse media source can affect the browse area of the UI.
             if (isFatalError) {
                 changeMode(MediaActivity.Mode.FATAL_ERROR);
             } else if (mMode == MediaActivity.Mode.FATAL_ERROR) {
@@ -314,6 +288,56 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
             }
         }
     };
+
+    private void handlePlaybackStateFromPlaybackSource(
+            PlaybackViewModel.PlaybackStateWrapper state, MediaSource mediaSource) {
+        mErrorsFromPlaybackHelper.handlePlaybackState(TAG, state, true, mediaSource);
+    }
+
+    private final PlaybackErrorsHelper mErrorsFromPlaybackHelper = new PlaybackErrorsHelper(this) {
+
+        @Override
+        public void handlePlaybackState(
+                @NonNull String tag, PlaybackViewModel.PlaybackStateWrapper state,
+                boolean ignoreSameState, MediaSource mediaSource) {
+            // TODO rethink interactions between customized layouts and dynamic visibility.
+            // Only the playback media source can change the minimized playback controls.
+            mCanShowMiniPlaybackControls = (state != null) && state.shouldDisplay();
+            updateMiniPlaybackControls(true);
+
+            super.handlePlaybackState(tag, state, ignoreSameState, mediaSource);
+        }
+
+        @Override
+        public void handleNewPlaybackState(
+                String displayedMessage, PendingIntent intent, boolean canAutoLaunch, String label,
+                MediaSource playbackSource) {
+
+            boolean areSourcesDifferent = !Objects.equals(playbackSource,
+                    getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE).getMediaSource().getValue());
+
+            // When the playback and browse media sources are the same, this playback state will
+            // will be handled by mErrorsFromBrowseHelper, so only process it when the sources
+            // are different. Also the error is never fatal because that is reserved for the browse
+            // source.
+            if (areSourcesDifferent && !TextUtils.isEmpty(displayedMessage)) {
+                showToastOrDialog(displayedMessage, intent, label, playbackSource);
+            }
+        }
+    };
+
+    private void showToastOrDialog(
+            String displayedMessage, PendingIntent intent, String label, MediaSource mediaSource) {
+        Drawable icon = mediaSource != null ? mediaSource.getIcon() : null;
+        if (intent != null && !isUxRestricted()) {
+            maybeCancelDialog();
+            showDialog(intent, displayedMessage, label,
+                    getString(android.R.string.cancel), icon);
+        } else {
+            maybeCancelToast();
+            showToast(displayedMessage, icon);
+        }
+    }
 
     private ErrorScreenController getErrorController() {
         if (mErrorController == null) {
@@ -548,8 +572,8 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     @Override
     public void onRootLoaded() {
         PlaybackViewModel playbackViewModel = getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE);
-        handlePlaybackState(playbackViewModel.getPlaybackStateWrapper().getValue(), false,
-                playbackViewModel.getMediaSource().getValue());
+        handlePlaybackStateFromBrowseSource(playbackViewModel.getPlaybackStateWrapper().getValue(),
+                false, playbackViewModel.getMediaSource().getValue());
     }
 
     @Override

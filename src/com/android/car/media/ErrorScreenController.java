@@ -2,15 +2,18 @@ package com.android.car.media;
 
 import android.app.PendingIntent;
 import android.car.content.pm.CarPackageManager;
+import android.content.res.Resources;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.apps.common.util.IntentUtils;
 import com.android.car.media.common.PlaybackErrorViewController;
 import com.android.car.media.common.browse.MediaItemsRepository;
 import com.android.car.media.common.source.MediaSource;
+import com.android.car.ui.FocusArea;
 
 /**
  * A view controller that displays the playback state error iif there is no browse tree.
@@ -18,6 +21,7 @@ import com.android.car.media.common.source.MediaSource;
 public class ErrorScreenController extends ViewControllerBase {
 
     private final PlaybackErrorViewController mPlaybackErrorViewController;
+    private final FocusArea mFocusArea;
     private PendingIntent mPendingIntent;
     private boolean mCanAutoLaunch;
 
@@ -26,6 +30,11 @@ public class ErrorScreenController extends ViewControllerBase {
         super(activity, mediaItemsRepo, carPackageManager, container, R.layout.fragment_error);
 
         mPlaybackErrorViewController = new PlaybackErrorViewController(mContent);
+        mFocusArea = mContent.findViewById(R.id.focus_area);
+
+        MediaActivity.ViewModel viewModel = new ViewModelProvider(activity).get(
+                MediaActivity.ViewModel.class);
+        viewModel.getMiniControlsVisible().observe(activity, this::onPlaybackControlsChanged);
     }
 
     @Override
@@ -55,5 +64,19 @@ public class ErrorScreenController extends ViewControllerBase {
         if (mCanAutoLaunch && mPendingIntent != null) {
             IntentUtils.sendIntent(mPendingIntent);
         }
+    }
+
+    void onPlaybackControlsChanged(boolean visible) {
+        int leftPadding = mFocusArea.getPaddingLeft();
+        int topPadding = mFocusArea.getPaddingTop();
+        int rightPadding = mFocusArea.getPaddingRight();
+        Resources res = mActivity.getResources();
+        int bottomPadding = visible
+                ? res.getDimensionPixelOffset(R.dimen.browse_fragment_bottom_padding) : 0;
+        mFocusArea.setPadding(leftPadding, topPadding, rightPadding, bottomPadding);
+        mFocusArea.setHighlightPadding(leftPadding, topPadding, rightPadding, bottomPadding);
+        // Set the bottom offset to bottomPadding regardless of mSetFocusAreaHighlightBottom so that
+        // RotaryService can find the correct target when the user nudges the rotary controller.
+        mFocusArea.setBoundsOffset(leftPadding, topPadding, rightPadding, bottomPadding);
     }
 }
