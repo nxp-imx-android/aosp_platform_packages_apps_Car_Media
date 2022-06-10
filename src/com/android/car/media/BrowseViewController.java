@@ -237,6 +237,7 @@ public class BrowseViewController {
                 new BrowseAdapterObservable(browseAdapter, mBrowseList));
         mLimitedBrowseAdapter = new LimitedBrowseAdapter(mBrowseList, browseAdapter,
                 mBrowseAdapterObserver);
+        mBrowseList.setHasFixedSize(true);
         mBrowseList.setAdapter(mLimitedBrowseAdapter);
 
         mUxrContentLimiter = new LifeCycleObserverUxrContentLimiter(

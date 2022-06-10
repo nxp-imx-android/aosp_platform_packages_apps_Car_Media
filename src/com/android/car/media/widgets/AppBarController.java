@@ -238,7 +238,11 @@ public class AppBarController {
                     item.getId(),
                     mediaItemMetadata.getId());
             if (match) {
-                mToolbarController.selectTab(i);
+                mSelectedTab = i;
+                // Only select a tab when the tabs are shown.
+                if (mToolbarController.getNavButtonMode() == NavButtonMode.DISABLED) {
+                    mToolbarController.selectTab(mSelectedTab);
+                }
                 return;
             }
         }
