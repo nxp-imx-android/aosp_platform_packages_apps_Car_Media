@@ -230,13 +230,14 @@ public class BrowseViewController {
                 MEDIA_SOURCE_MODE_PLAYBACK);
 
         LiveDataFunctions.pair(mPlaybackViewModel.getProgress(), mPlaybackViewModel.getMetadata())
-            .observe(activity, this::handleProgressUpdate);
+                .observe(activity, this::handleProgressUpdate);
 
         BrowseAdapter browseAdapter = new BrowseAdapter(mBrowseList.getContext());
         browseAdapter.registerAdapterDataObserver(
                 new BrowseAdapterObservable(browseAdapter, mBrowseList));
         mLimitedBrowseAdapter = new LimitedBrowseAdapter(mBrowseList, browseAdapter,
                 mBrowseAdapterObserver);
+        mBrowseList.setHasFixedSize(true);
         mBrowseList.setAdapter(mLimitedBrowseAdapter);
 
         mUxrContentLimiter = new LifeCycleObserverUxrContentLimiter(
@@ -428,16 +429,26 @@ public class BrowseViewController {
     }
 
     private void handleProgressUpdate(Pair<PlaybackProgress, MediaItemMetadata> progressMetaPair) {
-        if (progressMetaPair.first == null || progressMetaPair.second == null
+        if (progressMetaPair.first == null
+                || progressMetaPair.second == null
                 || mLimitedBrowseAdapter == null) {
             return;
         }
-        String mediaId = progressMetaPair.second.getId();
-        MediaItemMetadata adapterMetaData = mLimitedBrowseAdapter.getMediaByMetaData(mediaId);
-        if (adapterMetaData != null) {
-            double progress = progressMetaPair.first.getProgressFraction();
-            adapterMetaData.setProgress(progress);
-            mLimitedBrowseAdapter.updateItemMetaData(adapterMetaData);
+
+        // Checks if sources are the same before updating adapter with progress updates.
+        MediaSource browseSource =  mViewModel.getMediaSourceValue();
+        MediaSource playSource = mPlaybackViewModel.getMediaSource().getValue();
+
+        if (browseSource != null && playSource != null && browseSource.equals(playSource)) {
+            String mediaId = progressMetaPair.second.getId();
+            MediaItemMetadata adapterMetaData = mLimitedBrowseAdapter.getMediaByMetaData(mediaId);
+            if (adapterMetaData != null) {
+                double progress = progressMetaPair.first.getProgressFraction();
+                adapterMetaData.setProgress(progress);
+                mLimitedBrowseAdapter.updateItemMetaData(adapterMetaData);
+            }
+        } else {
+            // Ignore, playback app is not the same as browse app, therefore no UI update needed.
         }
     }
 }
