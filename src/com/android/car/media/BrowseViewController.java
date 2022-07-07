@@ -19,6 +19,7 @@ package com.android.car.media;
 import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
 
 import static com.android.car.apps.common.util.ViewUtils.removeFromParent;
+import static com.android.car.ui.recyclerview.CarUiRecyclerView.SCROLL_STATE_DRAGGING;
 
 import android.content.res.Resources;
 import android.os.Handler;
@@ -129,6 +130,9 @@ public class BrowseViewController {
                 @NonNull Collection<MediaItemMetadata> removedNodes);
 
         FragmentActivity getActivity();
+
+        /** Hides the keyboard if it's visible. */
+        void hideKeyboard();
     }
 
     private FragmentActivity getActivity() {
@@ -210,9 +214,9 @@ public class BrowseViewController {
         mContent.setAlpha(0f);
         container.addView(mContent);
 
-        mLoadingIndicatorDelay = mContent.getContext().getResources()
-                .getInteger(R.integer.progress_indicator_delay);
-        mSetFocusAreaHighlightBottom = mContent.getContext().getResources().getBoolean(
+        Resources res = mContent.getContext().getResources();
+        mLoadingIndicatorDelay = res.getInteger(R.integer.progress_indicator_delay);
+        mSetFocusAreaHighlightBottom = res.getBoolean(
                 R.bool.set_browse_list_focus_area_highlight_above_minimized_control_bar);
 
         mFocusArea = mContent.findViewById(R.id.focus_area);
@@ -239,6 +243,21 @@ public class BrowseViewController {
                 mBrowseAdapterObserver);
         mBrowseList.setHasFixedSize(true);
         mBrowseList.setAdapter(mLimitedBrowseAdapter);
+
+        if (res.getBoolean(R.bool.hide_search_keyboard_on_scroll_state_dragging)) {
+            mBrowseList.addOnScrollListener(new CarUiRecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(CarUiRecyclerView recyclerView, int dx, int dy) {
+                }
+
+                @Override
+                public void onScrollStateChanged(CarUiRecyclerView recyclerView, int newState) {
+                    if (newState == SCROLL_STATE_DRAGGING) {
+                        mCallbacks.hideKeyboard();
+                    }
+                }
+            });
+        }
 
         mUxrContentLimiter = new LifeCycleObserverUxrContentLimiter(
                 new UxrContentLimiterImpl(activity, R.xml.uxr_config));

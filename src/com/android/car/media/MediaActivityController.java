@@ -364,6 +364,11 @@ public class MediaActivityController extends ViewControllerBase {
         public FragmentActivity getActivity() {
             return mCallbacks.getActivity();
         }
+
+        @Override
+        public void hideKeyboard() {
+            MediaActivityController.this.hideKeyboard();
+        }
     };
 
     private final ViewAnimEndListener mViewAnimEndListener = view -> {
