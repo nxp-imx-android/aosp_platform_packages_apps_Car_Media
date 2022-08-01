@@ -58,6 +58,14 @@
         android:text="@string/nothing_to_play"
         android:visibility="gone"/>
 
+    <Space
+        android:id="@+id/browse_mini_item_guideline"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.25"
+        />
+
     <com.android.car.ui.FocusArea
         android:id="@+id/focus_area"
         android:layout_width="0dp"
