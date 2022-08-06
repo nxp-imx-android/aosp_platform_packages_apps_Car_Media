@@ -49,12 +49,20 @@ class GuidelinesUpdater implements InsetsChangedListener {
         View startPad = mGuidedView.findViewById(R.id.ui_content_start_guideline);
         ConstraintLayout.LayoutParams start =
                 (ConstraintLayout.LayoutParams)startPad.getLayoutParams();
-        start.setMargins(insets.getLeft(), 0,0, 0);
+        if (startPad.getLayoutDirection() == View.LAYOUT_DIRECTION_LTR) {
+            start.setMargins(insets.getLeft(), 0, 0, 0);
+        } else {
+            start.setMargins(0, 0, insets.getRight(), 0);
+        }
         startPad.setLayoutParams(start);
 
         View endPad = mGuidedView.findViewById(R.id.ui_content_end_guideline);
         ConstraintLayout.LayoutParams end = (ConstraintLayout.LayoutParams)endPad.getLayoutParams();
-        end.setMargins(0, 0, insets.getRight(), 0);
+        if (endPad.getLayoutDirection() == View.LAYOUT_DIRECTION_LTR) {
+            end.setMargins(0, 0, insets.getRight(), 0);
+        } else {
+            end.setMargins(insets.getLeft(), 0, 0, 0);
+        }
         endPad.setLayoutParams(end);
 
         View topPad = mGuidedView.findViewById(R.id.ui_content_top_guideline);
