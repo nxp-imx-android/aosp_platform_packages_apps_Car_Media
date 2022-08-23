@@ -25,6 +25,8 @@ android {
         targetSdkVersion gradle.ext.aaosTargetSDK
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true', coverage: 'true'
+        versionCode gradle.ext.getVersionCode()
+        versionName gradle.ext.getVersionName()
     }
 
     compileOptions {
