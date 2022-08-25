@@ -38,15 +38,6 @@ android {
         abortOnError false
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-        }
-        debug {
-            testCoverageEnabled = true
-        }
-    }
-
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
@@ -92,6 +83,17 @@ android {
             if (file(gradle.ext.platformCertPath).exists()) {
                 signingConfig signingConfigs.platform
             }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.platform
+        }
+        debug {
+            testCoverageEnabled = true
+            signingConfig signingConfigs.platform
         }
     }
 
