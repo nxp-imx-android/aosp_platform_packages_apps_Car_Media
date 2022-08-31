@@ -570,6 +570,17 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     }
 
     @Override
+    public void onBrowseEmptyListPlayItemClicked() {
+        mBrowsePlaybackController.play();
+        boolean switchToPlayback = getResources().getBoolean(
+                R.bool.switch_to_playback_view_when_playable_item_is_clicked);
+        if (switchToPlayback) {
+            changeMode(Mode.PLAYBACK);
+        }
+        setIntent(null);
+    }
+
+    @Override
     public void onRootLoaded() {
         PlaybackViewModel playbackViewModel = getPlaybackViewModel(MEDIA_SOURCE_MODE_BROWSE);
         handlePlaybackStateFromBrowseSource(playbackViewModel.getPlaybackStateWrapper().getValue(),
@@ -605,6 +616,7 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
             boolean mShowingSearchResults;
             String mSearchQuery;
             boolean mQueueVisible = false;
+            boolean mHasPlayableItem = false;
         }
 
         private boolean mNeedsInitialization = true;
@@ -723,6 +735,14 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
 
         void setSearchQuery(String searchQuery) {
             getSavedState().mSearchQuery = searchQuery;
+        }
+
+        void setHasPlayableItem(boolean hasPlayableItem) {
+            getSavedState().mHasPlayableItem = hasPlayableItem;
+        }
+
+        boolean hasPlayableItem() {
+            return getSavedState().mHasPlayableItem;
         }
     }
 

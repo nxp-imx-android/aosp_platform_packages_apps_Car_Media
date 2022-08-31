@@ -16,6 +16,7 @@
 
 package com.android.car.media;
 
+import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_BROWSE;
 import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
 
 import static com.android.car.apps.common.util.ViewUtils.removeFromParent;
@@ -24,6 +25,7 @@ import static com.android.car.ui.recyclerview.CarUiRecyclerView.SCROLL_STATE_DRA
 import android.content.res.Resources;
 import android.os.Handler;
 import android.util.Log;
+import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +44,7 @@ import com.android.car.apps.common.util.FutureData;
 import com.android.car.apps.common.util.LiveDataFunctions;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.media.browse.BrowseAdapter;
+import com.android.car.media.browse.BrowseMiniMediaItemView;
 import com.android.car.media.browse.BrowseViewHolder;
 import com.android.car.media.browse.LimitedBrowseAdapter;
 import com.android.car.media.common.MediaItemMetadata;
@@ -59,6 +62,7 @@ import com.android.car.uxr.UxrContentLimiterImpl;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A view controller that displays the media item children of a {@link MediaItemMetadata}.
@@ -81,6 +85,7 @@ public class BrowseViewController {
     private final ImageView mErrorIcon;
     private final TextView mMessage;
     private final LimitedBrowseAdapter mLimitedBrowseAdapter;
+    private BrowseMiniMediaItemView mEmptyListPlaybackBar;
 
     private final int mFadeDuration;
     private final int mLoadingIndicatorDelay;
@@ -124,6 +129,15 @@ public class BrowseViewController {
 
         /** Invoked when the user clicks on a browsable item. */
         void onBrowsableItemClicked(@NonNull MediaItemMetadata item);
+
+        /** Invoked when user clicks on the mini playback bar in an empty browse
+         *
+         * This item exists in the case where we have an empty list and haven't seen a playable item
+         * but we have a queue or metadata.
+         * This allows the user to start the queue in a media continuity situation.
+         *
+         */
+        void onBrowseEmptyListPlayItemClicked();
 
         /** Invoked when child nodes have been removed from this controller. */
         void onChildrenNodesRemoved(@NonNull BrowseViewController controller,
@@ -226,7 +240,6 @@ public class BrowseViewController {
         mFadeDuration = mContent.getContext().getResources().getInteger(
                 R.integer.new_album_art_fade_in_duration);
 
-
         FragmentActivity activity = callbacks.getActivity();
         mViewModel = ViewModelProviders.of(activity).get(MediaActivity.ViewModel.class);
 
@@ -235,6 +248,13 @@ public class BrowseViewController {
 
         LiveDataFunctions.pair(mPlaybackViewModel.getProgress(), mPlaybackViewModel.getMetadata())
                 .observe(activity, this::handleProgressUpdate);
+
+        LiveDataFunctions.pair(
+                PlaybackViewModel.get(activity.getApplication(),
+                        MEDIA_SOURCE_MODE_PLAYBACK).getMediaSource(),
+                PlaybackViewModel.get(activity.getApplication(),
+                        MEDIA_SOURCE_MODE_BROWSE).getMediaSource())
+                .observe(activity, this::handleSourceUpdates);
 
         BrowseAdapter browseAdapter = new BrowseAdapter(mBrowseList.getContext());
         browseAdapter.registerAdapterDataObserver(
@@ -268,6 +288,13 @@ public class BrowseViewController {
         browseAdapter.setRootPlayableViewType(rootPlayableHint);
 
         mMediaItems.observe(activity, mItemsObserver);
+    }
+
+    private void handleSourceUpdates(Pair<MediaSource, MediaSource> mediaSourceMediaSourcePair) {
+        //If sources are the same, make sure we aren't showing the mini item bar.
+        if (Objects.equals(mediaSourceMediaSourcePair.first, mediaSourceMediaSourcePair.second)) {
+            hideEmptyListPlayItem();
+        }
     }
 
     public MediaItemMetadata getParentItem() {
@@ -413,6 +440,12 @@ public class BrowseViewController {
 
         List<MediaItemMetadata> items = MediaBrowserViewModelImpl.filterItems(
                 /*root*/ !mDisplayMediaItems, futureData.getData());
+
+        boolean sourceHasPlayable = mViewModel.hasPlayableItem();
+        if (items != null && !sourceHasPlayable) {
+            mViewModel.setHasPlayableItem(items.stream().anyMatch(MediaItemMetadata::isPlayable));
+        }
+
         if (mDisplayMediaItems) {
             mLimitedBrowseAdapter.submitItems(mParentItem, items);
 
@@ -431,19 +464,62 @@ public class BrowseViewController {
             ViewUtils.hideViewAnimated(mBrowseList.getView(), duration);
             ViewUtils.showViewAnimated(mMessage, duration);
             ViewUtils.showViewAnimated(mErrorIcon, duration);
+            hideEmptyListPlayItem();
         } else if (items.isEmpty()) {
-            mMessage.setText(R.string.nothing_to_play);
-            ViewUtils.hideViewAnimated(mBrowseList.getView(), duration);
-            ViewUtils.hideViewAnimated(mErrorIcon, duration);
-            ViewUtils.showViewAnimated(mMessage, duration);
+            if (mViewModel.hasPlayableItem()  || isSourcesSame()) {
+                mMessage.setText(R.string.nothing_to_play);
+                ViewUtils.hideViewAnimated(mBrowseList.getView(), duration);
+                ViewUtils.hideViewAnimated(mErrorIcon, duration);
+                ViewUtils.showViewAnimated(mMessage, duration);
+                hideEmptyListPlayItem();
+            } else {
+                ViewUtils.hideViewAnimated(mBrowseList.getView(), duration);
+                ViewUtils.hideViewAnimated(mErrorIcon, duration);
+                ViewUtils.hideViewAnimated(mMessage, duration);
+                showEmptyListPlayItem();
+            }
         } else {
             ViewUtils.showViewAnimated(mBrowseList.getView(), duration);
             ViewUtils.hideViewAnimated(mErrorIcon, duration);
             ViewUtils.hideViewAnimated(mMessage, duration);
+            hideEmptyListPlayItem();
         }
 
         if (Log.isLoggable(TAG, Log.VERBOSE)) {
             Log.v(TAG, "onItemsUpdate " + getDebugInfo());
+        }
+    }
+
+    private boolean isSourcesSame() {
+        PlaybackViewModel playbackViewModelBrowse =
+                PlaybackViewModel.get(getActivity().getApplication(), MEDIA_SOURCE_MODE_BROWSE);
+        PlaybackViewModel playbackViewModelPlayback =
+                PlaybackViewModel.get(getActivity().getApplication(), MEDIA_SOURCE_MODE_PLAYBACK);
+        return Objects.equals(playbackViewModelPlayback.getMediaSource().getValue(),
+                playbackViewModelBrowse.getMediaSource().getValue());
+    }
+
+    private void showEmptyListPlayItem() {
+        if (mEmptyListPlaybackBar == null) {
+            View inflatedView = LayoutInflater.from(getActivity())
+                    .inflate(R.layout.browse_mini_bar_container, (ViewGroup) getContent());
+            mEmptyListPlaybackBar = inflatedView.findViewById(R.id.browse_mini_item_bar);
+        }
+
+        ViewUtils.showViewAnimated(mEmptyListPlaybackBar, mFadeDuration);
+
+        Size maxArtSize = MediaAppConfig.getMediaItemsBitmapMaxSize(mContent.getContext());
+        PlaybackViewModel playbackViewModel =
+                PlaybackViewModel.get(getActivity().getApplication(), MEDIA_SOURCE_MODE_BROWSE);
+        mEmptyListPlaybackBar.setModel(playbackViewModel, getActivity(), maxArtSize);
+
+        mEmptyListPlaybackBar.setOnClickListener(
+                view -> mCallbacks.onBrowseEmptyListPlayItemClicked());
+    }
+
+    private void hideEmptyListPlayItem() {
+        if (mEmptyListPlaybackBar != null) {
+            ViewUtils.hideViewAnimated(mEmptyListPlaybackBar, mFadeDuration);
         }
     }
 
