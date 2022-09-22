@@ -121,6 +121,9 @@ public class MediaActivityController extends ViewControllerBase {
         /** Invoked when the user clicks on a browsable item. */
         void onPlayableItemClicked(@NonNull MediaItemMetadata item);
 
+        /** Invoked when a user clicks on mini player in empty browse view */
+        void onBrowseEmptyListPlayItemClicked();
+
         /** Called once the list of the root node's children has been loaded. */
         void onRootLoaded();
 
@@ -342,9 +345,14 @@ public class MediaActivityController extends ViewControllerBase {
         }
 
         @Override
-            public void onChildrenNodesRemoved(@NonNull BrowseViewController controller,
-                    @NonNull Collection<MediaItemMetadata> removedNodes) {
+        public void onBrowseEmptyListPlayItemClicked() {
+            mCallbacks.onBrowseEmptyListPlayItemClicked();
 
+        }
+
+        @Override
+        public void onChildrenNodesRemoved(@NonNull BrowseViewController controller,
+                @NonNull Collection<MediaItemMetadata> removedNodes) {
             if (mBrowseStack.contains(controller.getParentItem())) {
                 for (MediaItemMetadata node : removedNodes) {
                     int indexOfNode = mBrowseStack.indexOf(node);
@@ -363,6 +371,11 @@ public class MediaActivityController extends ViewControllerBase {
         @Override
         public FragmentActivity getActivity() {
             return mCallbacks.getActivity();
+        }
+
+        @Override
+        public void hideKeyboard() {
+            MediaActivityController.this.hideKeyboard();
         }
     };
 

@@ -62,6 +62,11 @@
     <!-- End margin of playback queue button -->
     <dimen name="playback_queue_button_margin_end">@dimen/car_ui_padding_2</dimen>
 
+    <!-- appbar_view.xml -->
+    <!-- TODO(b/245995603): Replace this once CarUiRecyclerView is included -->
+    <dimen name="browse_fragment_top_padding">@dimen/car_ui_toolbar_row_height</dimen>
+    <dimen name="browse_fragment_top_padding_stacked">@dimen/car_ui_toolbar_row_height</dimen>
+
     <!-- Tab max width -->
     <dimen name="browse_tab_width">134dp</dimen>
     <!-- Tab Padding -->
@@ -186,5 +191,7 @@
 
     <!-- ic_queue_button.xml -->
     <dimen name="queue_button_background_size">54dp</dimen>
+
+    <dimen name="minimized_control_bar_margin_bottom">@dimen/car_ui_padding_3</dimen>
 
 </resources>

@@ -18,20 +18,12 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_app {
-    name: "CarMediaApp",
+android_library {
+    name: "car-media-app-source",
 
     srcs: ["src/**/*.java"],
 
     resource_dirs: ["res"],
-
-    required: ["allowed_privapp_com.android.car.media"],
-
-    certificate: "platform",
-    // Keep this commented out until enough apps stop requiring a system signature.
-    // certificate: ":com-android-car-apps-test",
-
-    privileged: true,
 
     libs: ["android.car-system-stubs"],
     min_sdk_version: "30", // Media requires apis that became public in R.
@@ -65,3 +57,99 @@ android_app {
         },
     },
 }
+
+android_app {
+    name: "CarMediaApp",
+
+    required: ["allowed_privapp_com.android.car.media"],
+
+    certificate: "platform",
+    // Keep this commented out until enough apps stop requiring a system signature.
+    // certificate: ":com-android-car-apps-test",
+
+    privileged: true,
+
+    libs: ["android.car-system-stubs"],
+    min_sdk_version: "30", // Media requires apis that became public in R.
+    target_sdk_version: "31",
+    sdk_version: "system_current",
+
+    optimize: {
+        enabled: false,
+    },
+
+    dex_preopt: {
+        enabled: false,
+    },
+
+    static_libs: [
+        "car-media-app-source"
+    ],
+
+    product_variables: {
+        pdk: {
+            enabled: false,
+        },
+    },
+
+}
+
+//############################################################
+// Car Media App unit test target, run with:
+// mmma -j64 packages/apps/Car/Media/
+// atest CarMediaAppTests
+//############################################################
+android_test {
+    name: "CarMediaAppTests",
+
+    certificate: ":com-android-car-apps-test",
+
+    privileged: true,
+
+    min_sdk_version: "30",
+    target_sdk_version: "31",
+    sdk_version: "system_current",
+
+    manifest: "tests/AndroidManifest.xml",
+
+    srcs: ["tests/unittests/src/**/*.java"],
+
+    resource_dirs: ["res"],
+
+    libs: [
+        "android.test.runner",
+        "android.test.base",
+        "android.car-stubs",
+        "android.car-system-stubs",
+        "android.test.mock.stubs",
+    ],
+
+    // Include the testing libraries
+    static_libs: [
+        "androidx.test.core",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "androidx.test.ext.junit",
+        "androidx.test.espresso.core",
+        "androidx.test.espresso.contrib",
+        "androidx.test.espresso.intents",
+        "hamcrest-library",
+        "mockito-target-inline-minus-junit4",
+        "platform-test-annotations",
+        "truth-prebuilt",
+        "car-media-app-source"
+    ],
+
+    jni_libs: [
+        // For mockito extended
+        "libdexmakerjvmtiagent",
+        "libstaticjvmtiagent",
+    ],
+
+    platform_apis: true,
+    test_suites: ["device-tests"],
+
+    // Enforce the jni libraries to be grouped into the APK file.
+    use_embedded_native_libs: true,
+}
+
