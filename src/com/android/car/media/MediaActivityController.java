@@ -317,6 +317,7 @@ public class MediaActivityController extends ViewControllerBase {
             } else {
                 showSearchMode(true);
                 updateAppBar();
+                mAppBarController.setSearchQuery(mViewModel.getSearchQuery());
             }
         }
 
