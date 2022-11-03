@@ -108,8 +108,11 @@
             android:layout_height="match_parent"
             android:visibility="gone"
             android:fadeScrollbars="true"
+            android:scrollbars="vertical"
             android:requiresFadingEdge="vertical"
             android:fadingEdgeLength="@dimen/queue_fading_edge_length"/>
+        <!-- NOTE: we must specify :scrollbars before :requiresFadingEdge to avoid a crash on R
+                (see b/253505704). -->
     </com.android.car.ui.FocusArea>
 
     <include
