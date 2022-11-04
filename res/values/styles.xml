@@ -95,6 +95,10 @@
 
     <style name="MediaIconContainerStyle"/>
 
+    <style name="MediaTintableIconContainerStyle" parent="MediaIconContainerStyle">
+        <item name="android:tint">@color/browse_icon_tint</item>
+    </style>
+
     <style name="ToastErrorIconStyle"/>
 
     <style name="ToastErrorTextStyle"/>

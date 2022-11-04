@@ -182,9 +182,10 @@ public class BrowseAdapter extends ListAdapter<BrowseViewData, BrowseViewHolder>
     @NonNull
     @Override
     public BrowseViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        int layoutId = BrowseItemViewType.values()[viewType].getLayoutId();
+        BrowseItemViewType browseViewType = BrowseItemViewType.values()[viewType];
+        int layoutId = browseViewType.getLayoutId();
         View view = LayoutInflater.from(mContext).inflate(layoutId, parent, false);
-        return new BrowseViewHolder(view);
+        return new BrowseViewHolder(view, browseViewType.getPlaceholderType());
     }
 
     @Override

@@ -27,6 +27,7 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.car.apps.common.imaging.ImageBinder;
 import com.android.car.apps.common.imaging.ImageViewBinder;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.media.MediaAppConfig;
@@ -55,7 +56,7 @@ public class BrowseViewHolder extends RecyclerView.ViewHolder {
     /**
      * Creates a {@link BrowseViewHolder} for the given view.
      */
-    BrowseViewHolder(View itemView) {
+    BrowseViewHolder(View itemView, ImageBinder.PlaceholderType placeholderType) {
         super(itemView);
         mTitle = itemView.findViewById(com.android.car.media.R.id.title);
         mSubtitle = itemView.findViewById(com.android.car.media.R.id.subtitle);
@@ -74,7 +75,7 @@ public class BrowseViewHolder extends RecyclerView.ViewHolder {
         mNewMediaDot = itemView.findViewById(com.android.car.media.R.id.browse_item_progress_new);
 
         Size maxArtSize = MediaAppConfig.getMediaItemsBitmapMaxSize(itemView.getContext());
-        mAlbumArtBinder = new ImageViewBinder<>(maxArtSize, mAlbumArt);
+        mAlbumArtBinder = new ImageViewBinder<>(placeholderType, maxArtSize, mAlbumArt, false);
     }
 
 

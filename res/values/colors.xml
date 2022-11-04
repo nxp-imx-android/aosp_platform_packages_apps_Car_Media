@@ -17,7 +17,8 @@
 <resources>
     <color name="no_content_text_color">#ffffff</color>
 
-    <color name="album_art_background">@color/car_grey_100</color>
+    <!-- Keep transparent to reveal what is behind the transparent areas of the album art. -->
+    <color name="album_art_background">#0000</color>
 
     <!-- Color displayed behind the transport controls while browsing -->
     <color name="browse_playback_bg_color">@color/car_dark_blue_grey_700</color>
@@ -42,4 +43,9 @@
 
     <!-- Color used for the search bar underline -->
     <color name="search_bar_underline_color">@android:color/white</color>
+
+    <!--  Color used to tint the album art icon in media_browse_list_icons_item.xml and
+        media_browse_grid_icons_item.xml -->
+    <color name="browse_icon_tint">@color/icon_tint</color>
+
 </resources>

@@ -31,6 +31,7 @@ import android.widget.TextView;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.car.apps.common.imaging.ImageBinder;
 import com.android.car.media.R;
 import com.android.car.media.common.MediaItemMetadata;
 
@@ -54,7 +55,7 @@ public class BrowseViewHolderTests {
         mContext = ApplicationProvider.getApplicationContext();
         int layoutId = BrowseItemViewType.ICON_LIST_ITEM.getLayoutId();
         mView = LayoutInflater.from(mContext).inflate(layoutId, null, false);
-        mBrowseViewHolder = new BrowseViewHolder(mView);
+        mBrowseViewHolder = new BrowseViewHolder(mView, ImageBinder.PlaceholderType.FOREGROUND);
         mItems = generateTestItems();
         mBrowseViewData = new BrowseViewData(mItems.get(0), BrowseItemViewType.LIST_ITEM, null);
     }
