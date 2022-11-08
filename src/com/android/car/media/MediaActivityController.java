@@ -307,6 +307,7 @@ public class MediaActivityController extends ViewControllerBase {
                 clearStack(mBrowseStack);
                 mBrowseStack.push(item);
                 showCurrentNode(true);
+                updateAppBar();
             }
         }
 
