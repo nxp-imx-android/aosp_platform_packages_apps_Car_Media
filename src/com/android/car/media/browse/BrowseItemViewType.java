@@ -18,6 +18,8 @@ package com.android.car.media.browse;
 
 import androidx.annotation.LayoutRes;
 
+import com.android.car.apps.common.imaging.ImageBinder;
+
 /**
  * Possible view types that would be used by the {@link BrowseAdapter}.
  */
@@ -68,5 +70,13 @@ public enum BrowseItemViewType {
     @LayoutRes
     public int getLayoutId() {
         return mLayoutId;
+    }
+
+    /** Returns the type of placeholder to use. */
+    ImageBinder.PlaceholderType getPlaceholderType() {
+        if ((this == ICON_GRID_ITEM) || (this == ICON_LIST_ITEM)) {
+            return ImageBinder.PlaceholderType.FOREGROUND_ICON;
+        }
+        return ImageBinder.PlaceholderType.FOREGROUND;
     }
 }

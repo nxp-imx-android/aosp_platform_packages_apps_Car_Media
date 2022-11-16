@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
  * adds media-specific methods to it like {@link #setItems} and {@link #setSearchSupported}.
  */
 public class AppBarController {
-
     private static final int MEDIA_UX_RESTRICTION_DEFAULT =
             CarUxRestrictions.UX_RESTRICTIONS_NO_SETUP;
     private static final int MEDIA_UX_RESTRICTION_NONE = CarUxRestrictions.UX_RESTRICTIONS_BASELINE;
@@ -46,6 +45,8 @@ public class AppBarController {
     private final Context mApplicationContext;
 
     private final boolean mUseSourceLogoForAppSelector;
+    // When enabled, tabs will be shown independent of the navigation button.
+    private final boolean mShowPersistentTabs;
 
     private final MenuItem mSearch;
     private final MenuItem mSettings;
@@ -98,6 +99,8 @@ public class AppBarController {
         mUseSourceLogoForAppSelector =
                 context.getResources().getBoolean(R.bool.use_media_source_logo_for_app_selector);
         Intent appSelectorIntent = MediaSource.getSourceSelectorIntent(context, false);
+
+        mShowPersistentTabs = context.getResources().getBoolean(R.bool.show_persistent_tabs);
 
         mToolbarController.registerSearchListener(query -> {
             mSearchQuery = query;
@@ -183,7 +186,8 @@ public class AppBarController {
     }
 
     private void updateTabs() {
-        if (mToolbarController.getNavButtonMode() != NavButtonMode.DISABLED) {
+        if (!mShowPersistentTabs
+                && mToolbarController.getNavButtonMode() != NavButtonMode.DISABLED) {
             mToolbarController.setTabs(Collections.emptyList());
         } else {
             mToolbarController.setTabs(mTabs.stream()

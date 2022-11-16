@@ -307,6 +307,7 @@ public class MediaActivityController extends ViewControllerBase {
                 clearStack(mBrowseStack);
                 mBrowseStack.push(item);
                 showCurrentNode(true);
+                updateAppBar();
             }
         }
 
@@ -317,6 +318,7 @@ public class MediaActivityController extends ViewControllerBase {
             } else {
                 showSearchMode(true);
                 updateAppBar();
+                mAppBarController.setSearchQuery(mViewModel.getSearchQuery());
             }
         }
 

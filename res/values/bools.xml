@@ -41,4 +41,7 @@
     <!-- Controls whether to hide the search keyboard when the scroll state of the browse list
          showing the results changes to SCROLL_STATE_DRAGGING. See BrowseViewController.  -->
     <bool name="hide_search_keyboard_on_scroll_state_dragging">true</bool>
+
+    <!-- Controls whether to show the tabs when the navigation button is visible. -->
+    <bool name="show_persistent_tabs">false</bool>
 </resources>
