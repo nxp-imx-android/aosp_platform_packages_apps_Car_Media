@@ -28,6 +28,7 @@ REGENERATE USING packages/apps/Car/tests/tools/rro/generate-overlayable.py
       <item type="bool" name="set_browse_list_focus_area_highlight_above_minimized_control_bar"/>
       <item type="bool" name="show_icon_for_now_playing_queue_list_item"/>
       <item type="bool" name="show_mini_playback_controls"/>
+      <item type="bool" name="show_persistent_tabs"/>
       <item type="bool" name="show_sound_settings"/>
       <item type="bool" name="show_subtitle_for_queue_list_item"/>
       <item type="bool" name="show_thumbnail_for_queue_list_item"/>
@@ -181,6 +182,7 @@ REGENERATE USING packages/apps/Car/tests/tools/rro/generate-overlayable.py
       <item type="style" name="BrowseSubheaderStyle"/>
       <item type="style" name="ErrorTextStyle"/>
       <item type="style" name="MediaIconContainerStyle"/>
+      <item type="style" name="MediaTintableIconContainerStyle"/>
       <item type="style" name="MetadataContainerStyle"/>
       <item type="style" name="MetadataPlaybackSubtitleStyle"/>
       <item type="style" name="MetadataPlaybackTitleStyle"/>
