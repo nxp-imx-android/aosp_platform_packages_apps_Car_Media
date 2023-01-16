@@ -352,12 +352,12 @@ public class MediaActivity extends FragmentActivity implements MediaActivityCont
     private void showDialog(PendingIntent intent, String message, String positiveBtnText,
             String negativeButtonText, @Nullable Drawable icon) {
         boolean showTitleIcon = getResources().getBoolean(R.bool.show_playback_source_id);
-        String title = getPlaybackViewModel(
-                MEDIA_SOURCE_MODE_PLAYBACK).getMediaSource().getValue().getDisplayName().toString();
+        MediaSource mediaSource = getPlaybackViewModel(MEDIA_SOURCE_MODE_PLAYBACK).getMediaSource().getValue();
+
 
         AlertDialogBuilder dialog = new AlertDialogBuilder(this);
         mDialog = dialog.setMessage(message)
-                .setTitle(showTitleIcon ? title : null)
+                .setTitle((mediaSource != null) ? mediaSource.getDisplayName().toString() : null)
                 .setIcon(showTitleIcon ? icon : null)
                 .setNegativeButton(negativeButtonText, null)
                 .setPositiveButton(positiveBtnText,
